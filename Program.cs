@@ -39,13 +39,60 @@ string? CLIENT_ID = Environment.GetEnvironmentVariable("PROCORE_CLIENT_ID");
 string? CLIENT_SECRET = Environment.GetEnvironmentVariable("PROCORE_CLIENT_SECRET");
 const string PROCORE_API_BASE = "https://sandbox.procore.com";
 const string REDIRECT_URI = "https://signiflow-procore-backend-net.onrender.com/oauth/callback";
+const string TOKEN_FILE = "/data/oauth.json";
 const int RETRY_LIMIT = 5;
+
+
+// ------------------
+// Load/save tokens to disk
+// ------------------
+
+void LoadTokensFromDisk()
+{
+    try
+    {
+        if (!File.Exists(TOKEN_FILE))
+            return;
+
+        var json = File.ReadAllText(TOKEN_FILE);
+        var stored = JsonSerializer.Deserialize<OAuthSession>(json);
+
+        if (stored != null)
+        {
+            oauthSession.Procore = stored.Procore;
+            oauthSession.Signiflow = stored.Signiflow;
+            Console.WriteLine("🔐 OAuth tokens loaded from disk");
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine("❌ Failed to load tokens");
+        Console.WriteLine(ex);
+    }
+}
+
+void SaveTokensToDisk()
+{
+    try
+    {
+        var json = JsonSerializer.Serialize(oauthSession);
+        File.WriteAllText(TOKEN_FILE, json);
+        Console.WriteLine("💾 OAuth tokens saved to disk");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine("❌ Failed to save tokens");
+        Console.WriteLine(ex);
+    }
+}
+
 
 // ------------------
 // In-memory token store (singleton-style)
 // ------------------
 
 var oauthSession = new OAuthSession();
+LoadTokensFromDisk();
 
 bool RequireAuth(HttpResponse response)
 {
@@ -64,6 +111,7 @@ bool RequireAuth(HttpResponse response)
 
     return true;
 }
+
 
 // ------------------
 // Health check
@@ -175,6 +223,7 @@ app.MapGet("/oauth/callback", async (HttpRequest request) =>
             tokenData.GetProperty("expires_in").GetInt32() * 1000;
 
         Console.WriteLine("OAuth tokens stored");
+        SaveTokensToDisk();
 
         return Results.Content(@"
             <h2>OAuth success</h2>
@@ -205,6 +254,115 @@ app.MapGet("/api/auth/status", () =>
         authenticated = isAuthenticated,
         expiresAt = oauthSession.Procore.ExpiresAt
     });
+});
+
+
+// ------------------
+// Refresh token
+// ------------------
+
+app.MapPost("/api/auth/refresh", async (HttpResponse response) =>
+{
+    // No refresh token → must re-auth
+    if (oauthSession.Procore.RefreshToken == null)
+    {
+        response.StatusCode = 401;
+        await response.WriteAsJsonAsync(new
+        {
+            refreshed = false,
+            needs_login = true,
+            auth = new
+            {
+                authenticated = false,
+                expiresAt = null
+            }
+        });
+        return;
+    }
+
+    try
+    {
+        using var httpClient = new HttpClient();
+
+        var payload = new
+        {
+            grant_type = "refresh_token",
+            client_id = CLIENT_ID,
+            client_secret = CLIENT_SECRET,
+            refresh_token = oauthSession.Procore.RefreshToken
+        };
+
+        var content = new StringContent(
+            JsonSerializer.Serialize(payload),
+            Encoding.UTF8,
+            "application/json"
+        );
+
+        var tokenRes = await httpClient.PostAsync(
+            "https://sandbox.procore.com/oauth/token",
+            content
+        );
+
+        var tokenJson = await tokenRes.Content.ReadAsStringAsync();
+
+        if (!tokenRes.IsSuccessStatusCode)
+        {
+            Console.WriteLine("❌ Refresh failed: " + tokenJson);
+
+            response.StatusCode = 401;
+            await response.WriteAsJsonAsync(new
+            {
+                refreshed = false,
+                needs_login = true
+            });
+            return;
+        }
+
+        var tokenData = JsonSerializer.Deserialize<JsonElement>(tokenJson)!;
+
+        oauthSession.Procore.AccessToken =
+            tokenData.GetProperty("access_token").GetString();
+
+        if (tokenData.TryGetProperty("refresh_token", out var newRefresh))
+        {
+            oauthSession.Procore.RefreshToken = newRefresh.GetString();
+        }
+
+        oauthSession.Procore.ExpiresAt =
+            DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() +
+            tokenData.GetProperty("expires_in").GetInt32() * 1000;
+
+        Console.WriteLine("🔁 Procore token refreshed");
+        SaveTokensToDisk();
+
+        await response.WriteAsJsonAsync(new
+        {
+            refreshed = true,
+            needs_login = false,
+            auth = new
+            {
+                authenticated = true,
+                expiresAt = oauthSession.Procore.ExpiresAt
+            }
+        });
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine("❌ Refresh error");
+        Console.WriteLine(ex);
+
+        response.StatusCode = 500;
+        await response.WriteAsJsonAsync(new
+        {
+            refreshed = false,
+            needs_login = true,
+            auth = new
+            {
+                authenticated = false,
+                expiresAt = null
+            }
+        });
+    }
 });
 
 
