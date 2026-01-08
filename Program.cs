@@ -32,6 +32,16 @@ var app = builder.Build();
 app.UseCors("DefaultCorsPolicy");
 app.UseHttpsRedirection();
 
+app.Use(async (context, next) =>
+{
+    if (context.Request.Method == "OPTIONS")
+    {
+        context.Response.StatusCode = 204;
+        return;
+    }
+    await next();
+});
+
 
 // ------------------
 // Environment variables
