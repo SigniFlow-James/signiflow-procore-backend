@@ -378,9 +378,9 @@ app.MapPost("/api/send", async (
         return;
     }
 
-    var companyId = companyIdProp.GetInt64();
-    var projectId = projectIdProp.GetInt64();
-    var commitmentId = commitmentIdProp.GetInt64();
+    var companyId = companyIdProp.GetString();
+    var projectId = projectIdProp.GetString();
+    var commitmentId = commitmentIdProp.GetString();
     var view = context.TryGetProperty("view", out var viewProp)
         ? viewProp.GetString()
         : null;
