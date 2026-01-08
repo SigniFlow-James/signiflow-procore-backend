@@ -41,7 +41,7 @@ const string PROCORE_API_BASE = "https://sandbox.procore.com";
 const string REDIRECT_URI = "https://signiflow-procore-backend-net.onrender.com/oauth/callback";
 const string TOKEN_FILE = "/data/oauth.json";
 const int RETRY_LIMIT = 5;
-
+var oauthSession = new OAuthSession();
 
 // ------------------
 // Load/save tokens to disk
@@ -86,13 +86,12 @@ void SaveTokensToDisk()
     }
 }
 
+LoadTokensFromDisk();
+
 
 // ------------------
 // In-memory token store (singleton-style)
 // ------------------
-
-var oauthSession = new OAuthSession();
-LoadTokensFromDisk();
 
 bool RequireAuth(HttpResponse response)
 {
