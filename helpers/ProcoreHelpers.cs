@@ -4,9 +4,9 @@ namespace SigniflowBackend.Helpers;
 
 public class ProcoreHelpers
 {
-    private readonly OAuthSession _oauthSession;
-    private readonly string _procoreApiBase;
-    private readonly int _retryLimit;
+    public OAuthSession _oauthSession;
+    public string _procoreApiBase;
+    public int _retryLimit;
 
     public ProcoreHelpers(OAuthSession oauthSession, string procoreApiBase, int retryLimit)
     {
