@@ -47,50 +47,50 @@ var oauthSession = new OAuthSession();
 // Load/save tokens to disk
 // ------------------
 
-void LoadTokensFromDisk()
-{
-    try
-    {
-        if (!File.Exists(TOKEN_FILE))
-            return;
+// void LoadTokensFromDisk()
+// {
+//     try
+//     {
+//         if (!File.Exists(TOKEN_FILE))
+//             return;
 
-        var json = File.ReadAllText(TOKEN_FILE);
-        var stored = JsonSerializer.Deserialize<OAuthSession>(json);
+//         var json = File.ReadAllText(TOKEN_FILE);
+//         var stored = JsonSerializer.Deserialize<OAuthSession>(json);
 
-        if (stored != null)
-        {
-            oauthSession.Procore = stored.Procore;
-            oauthSession.Signiflow = stored.Signiflow;
-            Console.WriteLine("🔐 OAuth tokens loaded from disk");
-        }
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine("❌ Failed to load tokens");
-        Console.WriteLine(ex);
-    }
-}
+//         if (stored != null)
+//         {
+//             oauthSession.Procore = stored.Procore;
+//             oauthSession.Signiflow = stored.Signiflow;
+//             Console.WriteLine("🔐 OAuth tokens loaded from disk");
+//         }
+//     }
+//     catch (Exception ex)
+//     {
+//         Console.WriteLine("❌ Failed to load tokens");
+//         Console.WriteLine(ex);
+//     }
+// }
 
-void SaveTokensToDisk()
-{
-    try
-    {
-        var json = JsonSerializer.Serialize(oauthSession);
-        File.WriteAllText(TOKEN_FILE, json);
-        Console.WriteLine("💾 OAuth tokens saved to disk");
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine("❌ Failed to save tokens");
-        Console.WriteLine(ex);
-    }
-}
+// void SaveTokensToDisk()
+// {
+//     try
+//     {
+//         var json = JsonSerializer.Serialize(oauthSession);
+//         File.WriteAllText(TOKEN_FILE, json);
+//         Console.WriteLine("💾 OAuth tokens saved to disk");
+//     }
+//     catch (Exception ex)
+//     {
+//         Console.WriteLine("❌ Failed to save tokens");
+//         Console.WriteLine(ex);
+//     }
+// }
 
-LoadTokensFromDisk();
+// LoadTokensFromDisk();
 
 
 // ------------------
-// In-memory token store (singleton-style)
+// In-memory token store
 // ------------------
 
 bool RequireAuth(HttpResponse response)
@@ -222,7 +222,7 @@ app.MapGet("/oauth/callback", async (HttpRequest request) =>
             tokenData.GetProperty("expires_in").GetInt32() * 1000;
 
         Console.WriteLine("OAuth tokens stored");
-        SaveTokensToDisk();
+        // SaveTokensToDisk();
 
         return Results.Content(@"
             <h2>OAuth success</h2>
@@ -332,7 +332,7 @@ app.MapPost("/api/auth/refresh", async (HttpResponse response) =>
             tokenData.GetProperty("expires_in").GetInt32() * 1000;
 
         Console.WriteLine("🔁 Procore token refreshed");
-        SaveTokensToDisk();
+        // SaveTokensToDisk();
 
         await response.WriteAsJsonAsync(new
         {
