@@ -194,7 +194,115 @@ app.MapGet("/oauth/callback", async (HttpRequest request) =>
 
 
 // ------------------
-// Auth status
+// Refresh token
+// ------------------
+
+app.MapPost("/api/auth/refresh", async (HttpResponse response) =>
+{
+    // No refresh token → must re-auth
+    if (oauthSession.Procore.RefreshToken == null)
+    {
+        response.StatusCode = 401;
+        await response.WriteAsJsonAsync(new
+        {
+            refreshed = false,
+            needs_login = true,
+            auth = new
+            {
+                authenticated = false,
+                expiresAt = null
+            }
+        });
+        return;
+    }
+
+    try
+    {
+        using var httpClient = new HttpClient();
+
+        var payload = new
+        {
+            grant_type = "refresh_token",
+            client_id = CLIENT_ID,
+            client_secret = CLIENT_SECRET,
+            refresh_token = oauthSession.Procore.RefreshToken
+        };
+
+        var content = new StringContent(
+            JsonSerializer.Serialize(payload),
+            Encoding.UTF8,
+            "application/json"
+        );
+
+        var tokenRes = await httpClient.PostAsync(
+            "https://sandbox.procore.com/oauth/token",
+            content
+        );
+
+        var tokenJson = await tokenRes.Content.ReadAsStringAsync();
+
+        if (!tokenRes.IsSuccessStatusCode)
+        {
+            Console.WriteLine("❌ Refresh failed: " + tokenJson);
+
+            response.StatusCode = 401;
+            await response.WriteAsJsonAsync(new
+            {
+                refreshed = false,
+                needs_login = true
+            });
+            return;
+        }
+
+        var tokenData = JsonSerializer.Deserialize<JsonElement>(tokenJson)!;
+
+        oauthSession.Procore.AccessToken =
+            tokenData.GetProperty("access_token").GetString();
+
+        if (tokenData.TryGetProperty("refresh_token", out var newRefresh))
+        {
+            oauthSession.Procore.RefreshToken = newRefresh.GetString();
+        }
+
+        oauthSession.Procore.ExpiresAt =
+            DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() +
+            tokenData.GetProperty("expires_in").GetInt32() * 1000;
+
+        Console.WriteLine("🔁 Procore token refreshed");
+        // SaveTokensToDisk();
+
+        await response.WriteAsJsonAsync(new
+        {
+            refreshed = true,
+            needs_login = false,
+            auth = new
+            {
+                authenticated = true,
+                expiresAt = oauthSession.Procore.ExpiresAt
+            }
+        });
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine("❌ Refresh error");
+        Console.WriteLine(ex);
+
+        response.StatusCode = 500;
+        await response.WriteAsJsonAsync(new
+        {
+            refreshed = false,
+            needs_login = true,
+            auth = new
+            {
+                authenticated = false,
+                expiresAt = null
+            }
+        });
+    }
+});
+
+// ------------------
+// OAuth status
 // ------------------
 
 app.MapGet("/api/auth/status", () =>
