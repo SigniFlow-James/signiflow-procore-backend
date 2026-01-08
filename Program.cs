@@ -63,18 +63,17 @@ const int RETRY_LIMIT = 5;
 
 var oauthSession = new OAuthSession();
 
-bool RequireAuth(HttpResponse response)
+async Task<bool> RequireAuth(HttpResponse response)
 {
     if (oauthSession.Procore.AccessToken == null ||
         oauthSession.Procore.ExpiresAt == null ||
         DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() >= oauthSession.Procore.ExpiresAt)
     {
         response.StatusCode = StatusCodes.Status401Unauthorized;
-        response.ContentType = "application/json";
-        response.WriteAsync(JsonSerializer.Serialize(new
+        await response.WriteAsJsonAsync(new
         {
             error = "Not authenticated with Procore"
-        }));
+        });
         return false;
     }
 
@@ -339,7 +338,7 @@ app.MapPost("/api/send", async (
     // ------------------
     // Auth guard
     // ------------------
-    if (!RequireAuth(response))
+    if (!await RequireAuth(response))
         return;
 
     // ------------------
