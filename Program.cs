@@ -38,7 +38,7 @@ app.UseHttpsRedirection();
 string? CLIENT_ID = Environment.GetEnvironmentVariable("PROCORE_CLIENT_ID");
 string? CLIENT_SECRET = Environment.GetEnvironmentVariable("PROCORE_CLIENT_SECRET");
 const string PROCORE_API_BASE = "https://sandbox.procore.com";
-const string REDIRECT_URI = "https://signiflow-backend-test.onrender.com/oauth/callback";
+const string REDIRECT_URI = "https://signiflow-procore-backend-net.onrender.com/oauth/callback";
 const int RETRY_LIMIT = 5;
 
 // ------------------
