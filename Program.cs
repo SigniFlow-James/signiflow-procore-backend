@@ -202,7 +202,7 @@ app.MapPost("/api/auth/refresh", async (HttpResponse response) =>
     // No refresh token → must re-auth
     if (oauthSession.Procore.RefreshToken == null)
     {
-        response.StatusCode = 401;
+        response.StatusCode = 200;
         await response.WriteAsJsonAsync(new
         {
             refreshed = false,
@@ -241,11 +241,12 @@ app.MapPost("/api/auth/refresh", async (HttpResponse response) =>
         {
             Console.WriteLine("❌ Refresh failed: " + tokenJson);
 
-            response.StatusCode = 401;
+            response.StatusCode = 200;
             await response.WriteAsJsonAsync(new
             {
                 refreshed = false,
-                needs_login = true
+                needs_login = true,
+                auth = oauthSession.Procore
             });
             return;
         }
@@ -287,7 +288,7 @@ app.MapPost("/api/auth/refresh", async (HttpResponse response) =>
         await response.WriteAsJsonAsync(new
         {
             refreshed = false,
-            needs_login = true,
+            needs_login = false,
             auth = oauthSession.Procore
         });
     }
