@@ -206,7 +206,7 @@ app.MapPost("/api/auth/refresh", async (HttpResponse response) =>
         await response.WriteAsJsonAsync(new
         {
             refreshed = false,
-            needs_login = true,
+            loginRequired = true,
             auth = oauthSession.Procore
         });
         return;
@@ -245,7 +245,7 @@ app.MapPost("/api/auth/refresh", async (HttpResponse response) =>
             await response.WriteAsJsonAsync(new
             {
                 refreshed = false,
-                needs_login = true,
+                loginRequired = true,
                 auth = oauthSession.Procore
             });
             return;
@@ -271,7 +271,7 @@ app.MapPost("/api/auth/refresh", async (HttpResponse response) =>
         await response.WriteAsJsonAsync(new
         {
             refreshed = true,
-            needs_login = false,
+            loginRequired = false,
             auth = new
             {
                 authenticated = true,
@@ -288,7 +288,7 @@ app.MapPost("/api/auth/refresh", async (HttpResponse response) =>
         await response.WriteAsJsonAsync(new
         {
             refreshed = false,
-            needs_login = false,
+            loginRequired = false,
             auth = oauthSession.Procore
         });
     }
