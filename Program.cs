@@ -207,11 +207,7 @@ app.MapPost("/api/auth/refresh", async (HttpResponse response) =>
         {
             refreshed = false,
             needs_login = true,
-            auth = new
-            {
-                authenticated = false,
-                expiresAt = null
-            }
+            auth = oauthSession.Procore
         });
         return;
     }
@@ -230,7 +226,7 @@ app.MapPost("/api/auth/refresh", async (HttpResponse response) =>
 
         var content = new StringContent(
             JsonSerializer.Serialize(payload),
-            Encoding.UTF8,
+            System.Text.Encoding.UTF8,
             "application/json"
         );
 
@@ -292,14 +288,11 @@ app.MapPost("/api/auth/refresh", async (HttpResponse response) =>
         {
             refreshed = false,
             needs_login = true,
-            auth = new
-            {
-                authenticated = false,
-                expiresAt = null
-            }
+            auth = oauthSession.Procore
         });
     }
 });
+
 
 // ------------------
 // OAuth status
