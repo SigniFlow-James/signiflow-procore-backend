@@ -20,7 +20,8 @@ builder.Services.AddCors(options =>
                 "https://sandbox.procore.com"
             )
             .AllowAnyHeader()
-            .AllowAnyMethod();
+            .AllowAnyMethod()
+            .AllowCredentials();
     });
 });
 
@@ -29,8 +30,8 @@ builder.Services.AddRouting();
 
 var app = builder.Build();
 
+
 app.UseCors("DefaultCorsPolicy");
-app.UseHttpsRedirection();
 
 app.Use(async (context, next) =>
 {
@@ -41,6 +42,8 @@ app.Use(async (context, next) =>
     }
     await next();
 });
+
+// app.UseHttpsRedirection();
 
 
 // ------------------
