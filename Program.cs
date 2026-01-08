@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using SigniflowBackend.Helpers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -55,8 +54,7 @@ string? CLIENT_ID = Environment.GetEnvironmentVariable("PROCORE_CLIENT_ID");
 string? CLIENT_SECRET = Environment.GetEnvironmentVariable("PROCORE_CLIENT_SECRET");
 const string PROCORE_API_BASE = "https://sandbox.procore.com";
 const string REDIRECT_URI = "https://signiflow-procore-backend-net.onrender.com/oauth/callback";
-const int RETRY_LIMIT = 7;
-var procoreHelper = new ProcoreHelpers(oauthSession, PROCORE_API_BASE, RETRY_LIMIT);
+const int RETRY_LIMIT = 5;
 
 
 // ------------------
@@ -332,69 +330,138 @@ app.MapGet("/api/auth/status", () =>
 // Send Procore PDF to SigniFlow
 // ------------------
 
-app.MapPost("/api/send", async (HttpRequest request, HttpResponse response) =>
+app.MapPost("/api/send", async (
+    HttpRequest request,
+    HttpResponse response
+) =>
 {
+    // ------------------
     // Auth guard
+    // ------------------
     if (!await RequireAuth(response))
         return;
 
+    // ------------------
     // Parse body
-    var (parseSuccess, body, parseError) = await procoreHelper.ParseRequestBody(request);
-    if (!parseSuccess)
+    // ------------------
+    JsonElement body;
+    try
+    {
+        body = await JsonSerializer.DeserializeAsync<JsonElement>(request.Body);
+    }
+    catch
     {
         response.StatusCode = 400;
-        await response.WriteAsJsonAsync(new { error = parseError });
+        await response.WriteAsJsonAsync(new { error = "Invalid JSON body" });
         return;
     }
 
-    // Validate structure
-    var (structureValid, form, context, structureError) = procoreHelper.ValidateRequestStructure(body);
-    if (!structureValid)
+    if (!body.TryGetProperty("form", out var form) ||
+        !body.TryGetProperty("context", out var context))
     {
+        Console.WriteLine("❌ Missing form or context");
         response.StatusCode = 400;
-        await response.WriteAsJsonAsync(new { error = structureError });
+        await response.WriteAsJsonAsync(new { error = "Missing form or context" });
         return;
     }
 
+    // ------------------
     // Extract Procore context
-    var (contextValid, companyId, projectId, commitmentId, view, contextError) = 
-        procoreHelper.ExtractProcoreContext(context);
-    
-    if (!contextValid)
+    // ------------------
+    if (!context.TryGetProperty("company_id", out var companyIdProp) ||
+        !context.TryGetProperty("project_id", out var projectIdProp) ||
+        !context.TryGetProperty("object_id", out var commitmentIdProp))
     {
+        Console.WriteLine("❌ Invalid Procore context");
         response.StatusCode = 400;
-        await response.WriteAsJsonAsync(new { error = contextError });
+        await response.WriteAsJsonAsync(new { error = "Invalid Procore context" });
         return;
     }
+
+    var companyId = companyIdProp.GetString();
+    var projectId = projectIdProp.GetString();
+    var commitmentId = commitmentIdProp.GetString();
+    var view = context.TryGetProperty("view", out var viewProp)
+        ? viewProp.GetString()
+        : null;
 
     Console.WriteLine("📥 /api/send received");
     Console.WriteLine($"Company: {companyId}, Project: {projectId}, Commitment: {commitmentId}");
 
-
     try
     {
         using var httpClient = new HttpClient();
-        var exportUrl = procoreHelper.BuildExportUrl(companyId!, projectId!, commitmentId!);
 
-        // Start PDF export
-        var exportStarted = await procoreHelper.StartPdfExport(httpClient, exportUrl, companyId!);
-        if (!exportStarted)
+        var exportUrl =
+            $"{PROCORE_API_BASE}/rest/v2.0/companies/{companyId}/projects/{projectId}/commitment_contracts/{commitmentId}/pdf";
+
+        // ------------------
+        // Start export (POST)
+        // ------------------
+        var postReq = new HttpRequestMessage(HttpMethod.Post, exportUrl);
+        postReq.Headers.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue(
+                "Bearer",
+                oauthSession.Procore.AccessToken
+            );
+        postReq.Headers.Add("Procore-Company-Id", companyId.ToString());
+
+        var exportPost = await httpClient.SendAsync(postReq);
+        Console.WriteLine("Export response status: " + (int)exportPost.StatusCode);
+
+        // ------------------
+        // Poll for PDF (GET)
+        // ------------------
+        int retries = RETRY_LIMIT;
+        byte[]? pdfBytes = null;
+
+        while (retries > 0)
         {
-            response.StatusCode = 500;
-            await response.WriteAsJsonAsync(new { error = "Failed to start PDF export" });
-            return;
+            var getReq = new HttpRequestMessage(HttpMethod.Get, exportUrl);
+            getReq.Headers.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue(
+                    "Bearer",
+                    oauthSession.Procore.AccessToken
+                );
+            getReq.Headers.Add("Procore-Company-Id", companyId.ToString());
+
+            var exportResponse = await httpClient.SendAsync(getReq);
+
+            if (exportResponse.StatusCode == System.Net.HttpStatusCode.OK)
+            {
+                pdfBytes = await exportResponse.Content.ReadAsByteArrayAsync();
+                Console.WriteLine("✅ PDF exported successfully, size: " + pdfBytes.Length);
+                break;
+            }
+            else if (exportResponse.StatusCode == System.Net.HttpStatusCode.Accepted ||
+                     exportResponse.StatusCode == System.Net.HttpStatusCode.NoContent)
+            {
+                retries--;
+                Console.WriteLine($"PDF not ready yet, retries left: {retries}");
+                await Task.Delay(2000);
+            }
+            else
+            {
+                var errorText = await exportResponse.Content.ReadAsStringAsync();
+                Console.WriteLine("❌ PDF export failed: " + errorText);
+
+                response.StatusCode = 500;
+                await response.WriteAsJsonAsync(new { error = "PDF export failed" });
+                return;
+            }
         }
 
-        // Poll for PDF completion
-        var pdfBytes = await procoreHelper.PollForPdf(httpClient, exportUrl, companyId!);
         if (pdfBytes == null)
         {
+            Console.WriteLine("❌ PDF export timed out after retries");
             response.StatusCode = 500;
-            await response.WriteAsJsonAsync(new { error = "PDF export failed or timed out" });
+            await response.WriteAsJsonAsync(new { error = "PDF export timed out" });
             return;
         }
 
+        // ------------------
         // Convert to base64
+        // ------------------
         var pdfBase64 = Convert.ToBase64String(pdfBytes);
         Console.WriteLine("📤 Sending PDF to SigniFlow...");
 
@@ -416,6 +483,7 @@ app.MapPost("/api/send", async (HttpRequest request, HttpResponse response) =>
         await response.WriteAsJsonAsync(new { error = "Error exporting PDF" });
     }
 });
+
 
 app.Run();
 
