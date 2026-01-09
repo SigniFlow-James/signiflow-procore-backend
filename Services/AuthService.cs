@@ -54,18 +54,15 @@ public class AuthService
             return false;
         }
 
-        // Implement when Signiflow integration is added
-        // vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
-
-        // else if (IsSigniflowAuthenticated() == false)
-        // {
-        //     response.StatusCode = StatusCodes.Status401Unauthorized;
-        //     await response.WriteAsJsonAsync(new
-        //     {
-        //         error = "Not authenticated with Signiflow"
-        //     });
-        //     return false;
-        // }
+        else if (IsSigniflowAuthenticated() == false)
+        {
+            response.StatusCode = StatusCodes.Status401Unauthorized;
+            await response.WriteAsJsonAsync(new
+            {
+                error = "Not authenticated with Signiflow"
+            });
+            return false;
+        }
 
         return true;
     }
@@ -84,8 +81,8 @@ public class AuthService
             var payload = new
             {
                 grant_type = "authorization_code",
-                client_id = AppConfig.ClientId,
-                client_secret = AppConfig.ClientSecret,
+                client_id = AppConfig.ProcoreClientId,
+                client_secret = AppConfig.ProcoreClientSecret,
                 redirect_uri = AppConfig.RedirectUri,
                 code
             };
@@ -136,7 +133,7 @@ public class AuthService
     // Refresh Procore token
     // ------------------------------------------------------------
     
-    public async Task<(bool refreshed, bool loginRequired)> RefreshTokenAsync()
+    public async Task<(bool refreshed, bool loginRequired)> RefreshProcoreTokenAsync()
     {
         if (_oauthSession.Procore.RefreshToken == null)
         {
@@ -150,8 +147,8 @@ public class AuthService
             var payload = new
             {
                 grant_type = "refresh_token",
-                client_id = AppConfig.ClientId,
-                client_secret = AppConfig.ClientSecret,
+                client_id = AppConfig.ProcoreClientId,
+                client_secret = AppConfig.ProcoreClientSecret,
                 refresh_token = _oauthSession.Procore.RefreshToken
             };
 

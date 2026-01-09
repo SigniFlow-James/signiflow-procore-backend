@@ -5,22 +5,20 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 
+namespace FullWorkflowRestAPI.APIClasses;
+
 public static class ApiEndpoints
 {
     public static void MapApiEndpoints(this WebApplication app)
     {
-        
-        // ------------------------------------------------------------
         // Refresh token
-        // ------------------------------------------------------------
-        
         app.MapPost("/api/auth/refresh", async (
             HttpResponse response,
             AuthService authService,
             OAuthSession oauthSession
         ) =>
         {
-            var (refreshed, loginRequired) = await authService.RefreshTokenAsync();
+            var (refreshed, loginRequired) = await authService.RefreshProcoreTokenAsync();
 
             response.StatusCode = 200;
             await response.WriteAsJsonAsync(new
@@ -33,11 +31,7 @@ public static class ApiEndpoints
             });
         });
 
-
-        // ------------------------------------------------------------
         // Auth status
-        // ------------------------------------------------------------
-
         app.MapGet("/api/auth/status", (AuthService authService, OAuthSession oauthSession) =>
         {
             var isAuthenticated = authService.IsProcoreAuthenticated();
@@ -49,16 +43,13 @@ public static class ApiEndpoints
             });
         });
 
-
-        // ------------------------------------------------------------
         // Send Procore PDF to SigniFlow
-        // ------------------------------------------------------------
-
         app.MapPost("/api/send", async (
             HttpRequest request,
             HttpResponse response,
             AuthService authService,
-            ProcoreService procoreService
+            ProcoreService procoreService,
+            SigniflowService signiflowService
         ) =>
         {
             // Auth guard
@@ -87,6 +78,29 @@ public static class ApiEndpoints
                 return;
             }
 
+            // Extract signer info from form
+            if (!form.TryGetProperty("signerEmail", out var signerEmailProp) ||
+                !form.TryGetProperty("signerFullName", out var signerNameProp))
+            {
+                Console.WriteLine("❌ Missing signer information");
+                response.StatusCode = 400;
+                await response.WriteAsJsonAsync(new { error = "Missing signerEmail or signerFullName" });
+                return;
+            }
+
+            var signerEmail = signerEmailProp.GetString();
+            var signerFullName = signerNameProp.GetString();
+            var customMessage = form.TryGetProperty("customMessage", out var msgProp) 
+                ? msgProp.GetString() 
+                : null;
+
+            if (string.IsNullOrWhiteSpace(signerEmail) || string.IsNullOrWhiteSpace(signerFullName))
+            {
+                response.StatusCode = 400;
+                await response.WriteAsJsonAsync(new { error = "Signer email and full name are required" });
+                return;
+            }
+
             // Extract Procore context
             if (!context.TryGetProperty("company_id", out var companyIdProp) ||
                 !context.TryGetProperty("project_id", out var projectIdProp) ||
@@ -112,33 +126,51 @@ public static class ApiEndpoints
 
             Console.WriteLine("📥 /api/send received");
             Console.WriteLine($"Company: {companyId}, Project: {projectId}, Commitment: {commitmentId}");
+            Console.WriteLine($"Signer: {signerFullName} ({signerEmail})");
 
             // Export PDF from Procore
-            var (pdfBytes, error) = await procoreService.ExportCommitmentPdfAsync(
+            var (pdfBytes, exportError) = await procoreService.ExportCommitmentPdfAsync(
                 companyId,
                 projectId,
                 commitmentId
             );
 
-            if (error != null)
+            if (exportError != null)
             {
                 response.StatusCode = 500;
-                await response.WriteAsJsonAsync(new { error });
+                await response.WriteAsJsonAsync(new { error = exportError });
                 return;
             }
 
-            // Convert to base64
-            var pdfBase64 = Convert.ToBase64String(pdfBytes!);
-            Console.WriteLine(pdfBase64);
             Console.WriteLine("📤 Sending PDF to SigniFlow...");
 
-            // (SigniFlow integration goes here)
+            // Send to SigniFlow
+            var documentName = $"Procore_Commitment_{commitmentId}";
+            var (workflowResponse, signiflowError) = await signiflowService.CreateWorkflowAsync(
+                pdfBytes!,
+                documentName,
+                signerEmail,
+                signerFullName,
+                customMessage
+            );
+
+            if (signiflowError != null)
+            {
+                response.StatusCode = 500;
+                await response.WriteAsJsonAsync(new { error = signiflowError });
+                return;
+            }
+
+            Console.WriteLine("✅ Workflow created successfully");
+            Console.WriteLine($"Document ID: {workflowResponse!.DocIDField}");
 
             response.StatusCode = 200;
             await response.WriteAsJsonAsync(new
             {
                 success = true,
-                pdfSize = pdfBytes!.Length
+                pdfSize = pdfBytes!.Length,
+                documentId = workflowResponse.DocIDField,
+                documentName = documentName
             });
         });
     }

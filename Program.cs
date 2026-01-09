@@ -4,6 +4,7 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using FullWorkflowRestAPI.APIClasses;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -37,6 +38,14 @@ builder.Services.AddRouting();
 builder.Services.AddSingleton<OAuthSession>();
 builder.Services.AddSingleton<AuthService>();
 builder.Services.AddSingleton<ProcoreService>();
+
+// Register SigniFlow services
+builder.Services.AddHttpClient<SigniflowApiClient>(client =>
+{
+    client.BaseAddress = new Uri(AppConfig.SigniflowApiBase);
+    client.Timeout = TimeSpan.FromSeconds(30);
+});
+builder.Services.AddScoped<SigniflowService>();
 
 var app = builder.Build();
 
