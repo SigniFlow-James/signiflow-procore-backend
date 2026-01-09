@@ -11,37 +11,6 @@ public static class ApiEndpoints
 {
     public static void MapApiEndpoints(this WebApplication app)
     {
-        // Refresh token
-        app.MapPost("/api/auth/refresh", async (
-            HttpResponse response,
-            AuthService authService,
-            OAuthSession oauthSession
-        ) =>
-        {
-            var (refreshed, loginRequired) = await authService.RefreshProcoreTokenAsync();
-
-            response.StatusCode = 200;
-            await response.WriteAsJsonAsync(new
-            {
-                refreshed,
-                loginRequired,
-                auth = refreshed
-                    ? new { authenticated = true, expiresAt = oauthSession.Procore.ExpiresAt }
-                    : (object)oauthSession.Procore
-            });
-        });
-
-        // Auth status
-        app.MapGet("/api/auth/status", (AuthService authService, OAuthSession oauthSession) =>
-        {
-            var isAuthenticated = authService.IsProcoreAuthenticated();
-
-            return Results.Json(new
-            {
-                authenticated = isAuthenticated,
-                expiresAt = oauthSession.Procore.ExpiresAt
-            });
-        });
 
         // Send Procore PDF to SigniFlow
         app.MapPost("/api/send", async (

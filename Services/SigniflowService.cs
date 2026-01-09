@@ -8,10 +8,24 @@ namespace FullWorkflowRestAPI.APIClasses;
 public class SigniflowService
 {
     private readonly SigniflowApiClient _client;
+    private readonly OAuthSession _oauthSession;
 
-    public SigniflowService(SigniflowApiClient client)
+    public SigniflowService(SigniflowApiClient client, OAuthSession oauthSession)
     {
         _client = client;
+        _oauthSession = oauthSession;
+    }
+
+    public async Task<Token?> LoginAsync()
+    {
+        var loginResponse = await _client.LoginAsync();
+
+        if (loginResponse.ResultField != "Success")
+        {
+            Console.WriteLine("❌ SigniFlow login failed:" + loginResponse.ResultField);
+            return null;
+        }
+        return loginResponse.TokenField;
     }
 
     // ------------------------------------------------------------
@@ -26,16 +40,10 @@ public class SigniflowService
     {
         try
         {
-            // ---------------- LOGIN ----------------
-            var loginResponse = await _client.LoginAsync();
-            if (loginResponse.ResultField != "Success")
-                return (null, "SigniFlow login failed: " + loginResponse.ResultField);
-
-            var token = loginResponse.TokenField;
-
+            var token = _oauthSession.Signiflow.TokenField;
             if (token == null)
             {
-                return (null, "token is null") ;
+                return (null, "token is null");
             }
 
             // ---------------- DOCUMENT ----------------

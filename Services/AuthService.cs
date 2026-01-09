@@ -7,12 +7,13 @@ using Microsoft.AspNetCore.Http;
 public class AuthService
 {
     private readonly OAuthSession _oauthSession;
+    private readonly FullWorkflowRestAPI.APIClasses.SigniflowApiClient _signiflowClient;
 
-    public AuthService(OAuthSession oauthSession)
+    public AuthService(OAuthSession oauthSession, FullWorkflowRestAPI.APIClasses.SigniflowApiClient client)
     {
         _oauthSession = oauthSession;
+        _signiflowClient = client;
     }
-
 
     // ------------------------------------------------------------
     // Check Procore authentication
@@ -32,9 +33,8 @@ public class AuthService
 
     public bool IsSigniflowAuthenticated()
     {
-        return _oauthSession.Signiflow.AccessToken != null &&
-               _oauthSession.Signiflow.ExpiresAt != null &&
-               DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() < _oauthSession.Signiflow.ExpiresAt;
+        return _oauthSession.Signiflow.TokenField != null &&
+               DateTimeOffset.UtcNow < _oauthSession.Signiflow.TokenField.TokenExpiryField;
     }
 
 
@@ -132,7 +132,7 @@ public class AuthService
     // ------------------------------------------------------------
     // Refresh Procore token
     // ------------------------------------------------------------
-    
+
     public async Task<(bool refreshed, bool loginRequired)> RefreshProcoreTokenAsync()
     {
         if (_oauthSession.Procore.RefreshToken == null)
@@ -193,6 +193,24 @@ public class AuthService
             Console.WriteLine("❌ Refresh error");
             Console.WriteLine(ex);
             return (false, false);
+        }
+    }
+
+    public async Task<bool> SigniflowLoginAsync()
+    {
+        try
+        {
+            var loginRes = await _signiflowClient.LoginAsync();
+
+            _oauthSession.Signiflow.TokenField = loginRes.TokenField;
+            Console.WriteLine("🔁 Signiflow logged in");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("❌ Signiflow login error");
+            Console.WriteLine(ex);
+            return false;
         }
     }
 }
