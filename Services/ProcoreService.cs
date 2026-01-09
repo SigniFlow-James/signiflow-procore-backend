@@ -12,7 +12,12 @@ public class ProcoreService
         _oauthSession = oauthSession;
     }
 
-    public async Task<(byte[]? pdfBytes, string? error)> ExportCommitmentPdf(
+
+    // ------------------------------------------------------------
+    // Export commitment PDF from Procore
+    // ------------------------------------------------------------
+
+    public async Task<(byte[]? pdfBytes, string? error)> ExportCommitmentPdfAsync(
         string companyId,
         string projectId,
         string commitmentId)

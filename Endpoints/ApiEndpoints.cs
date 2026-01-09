@@ -9,14 +9,18 @@ public static class ApiEndpoints
 {
     public static void MapApiEndpoints(this WebApplication app)
     {
+        
+        // ------------------------------------------------------------
         // Refresh token
+        // ------------------------------------------------------------
+        
         app.MapPost("/api/auth/refresh", async (
             HttpResponse response,
             AuthService authService,
             OAuthSession oauthSession
         ) =>
         {
-            var (refreshed, loginRequired) = await authService.RefreshToken();
+            var (refreshed, loginRequired) = await authService.RefreshTokenAsync();
 
             response.StatusCode = 200;
             await response.WriteAsJsonAsync(new
@@ -29,10 +33,14 @@ public static class ApiEndpoints
             });
         });
 
+
+        // ------------------------------------------------------------
         // Auth status
+        // ------------------------------------------------------------
+
         app.MapGet("/api/auth/status", (AuthService authService, OAuthSession oauthSession) =>
         {
-            var isAuthenticated = authService.IsAuthenticated();
+            var isAuthenticated = authService.IsProcoreAuthenticated();
 
             return Results.Json(new
             {
@@ -41,7 +49,11 @@ public static class ApiEndpoints
             });
         });
 
+
+        // ------------------------------------------------------------
         // Send Procore PDF to SigniFlow
+        // ------------------------------------------------------------
+
         app.MapPost("/api/send", async (
             HttpRequest request,
             HttpResponse response,
@@ -50,7 +62,7 @@ public static class ApiEndpoints
         ) =>
         {
             // Auth guard
-            if (!await authService.RequireAuth(response))
+            if (!await authService.CheckAuthAsync(response))
                 return;
 
             // Parse body
@@ -102,7 +114,7 @@ public static class ApiEndpoints
             Console.WriteLine($"Company: {companyId}, Project: {projectId}, Commitment: {commitmentId}");
 
             // Export PDF from Procore
-            var (pdfBytes, error) = await procoreService.ExportCommitmentPdf(
+            var (pdfBytes, error) = await procoreService.ExportCommitmentPdfAsync(
                 companyId,
                 projectId,
                 commitmentId

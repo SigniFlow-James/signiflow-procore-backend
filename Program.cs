@@ -7,7 +7,11 @@ using Microsoft.Extensions.Hosting;
 
 var builder = WebApplication.CreateBuilder(args);
 
+
+// ------------------------------------------------------------
 // Configure services
+// ------------------------------------------------------------
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("DefaultCorsPolicy", policy =>
@@ -25,7 +29,11 @@ builder.Services.AddCors(options =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddRouting();
 
+
+// ------------------------------------------------------------
 // Register singleton services
+// ------------------------------------------------------------
+
 builder.Services.AddSingleton<OAuthSession>();
 builder.Services.AddSingleton<AuthService>();
 builder.Services.AddSingleton<ProcoreService>();
@@ -44,7 +52,11 @@ app.Use(async (context, next) =>
     await next();
 });
 
+
+// ------------------------------------------------------------
 // Map endpoints
+// ------------------------------------------------------------
+
 app.MapHealthEndpoints();
 app.MapOAuthEndpoints();
 app.MapApiEndpoints();

@@ -13,11 +13,38 @@ public class AuthService
         _oauthSession = oauthSession;
     }
 
-    public async Task<bool> RequireAuth(HttpResponse response)
+
+    // ------------------------------------------------------------
+    // Check Procore authentication
+    // ------------------------------------------------------------
+
+    public bool IsProcoreAuthenticated()
     {
-        if (_oauthSession.Procore.AccessToken == null ||
-            _oauthSession.Procore.ExpiresAt == null ||
-            DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() >= _oauthSession.Procore.ExpiresAt)
+        return _oauthSession.Procore.AccessToken != null &&
+               _oauthSession.Procore.ExpiresAt != null &&
+               DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() < _oauthSession.Procore.ExpiresAt;
+    }
+
+
+    // ------------------------------------------------------------
+    // Check Signiflow authentication
+    // ------------------------------------------------------------
+
+    public bool IsSigniflowAuthenticated()
+    {
+        return _oauthSession.Signiflow.AccessToken != null &&
+               _oauthSession.Signiflow.ExpiresAt != null &&
+               DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() < _oauthSession.Signiflow.ExpiresAt;
+    }
+
+
+    // ------------------------------------------------------------
+    // Async Check authentication
+    // ------------------------------------------------------------
+
+    public async Task<bool> CheckAuthAsync(HttpResponse response)
+    {
+        if (IsProcoreAuthenticated() == false)
         {
             response.StatusCode = StatusCodes.Status401Unauthorized;
             await response.WriteAsJsonAsync(new
@@ -27,17 +54,28 @@ public class AuthService
             return false;
         }
 
+        // Implement when Signiflow integration is added
+        // vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+
+        // else if (IsSigniflowAuthenticated() == false)
+        // {
+        //     response.StatusCode = StatusCodes.Status401Unauthorized;
+        //     await response.WriteAsJsonAsync(new
+        //     {
+        //         error = "Not authenticated with Signiflow"
+        //     });
+        //     return false;
+        // }
+
         return true;
     }
 
-    public bool IsAuthenticated()
-    {
-        return _oauthSession.Procore.AccessToken != null &&
-               _oauthSession.Procore.ExpiresAt != null &&
-               DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() < _oauthSession.Procore.ExpiresAt;
-    }
 
-    public async Task<(bool success, string? error)> ExchangeCodeForToken(string code)
+    // ------------------------------------------------------------
+    // Aquire Procore tokens
+    // ------------------------------------------------------------
+
+    public async Task<(bool success, string? error)> GetProcoreTokenAsync(string code)
     {
         try
         {
@@ -93,7 +131,12 @@ public class AuthService
         }
     }
 
-    public async Task<(bool refreshed, bool loginRequired)> RefreshToken()
+
+    // ------------------------------------------------------------
+    // Refresh Procore token
+    // ------------------------------------------------------------
+    
+    public async Task<(bool refreshed, bool loginRequired)> RefreshTokenAsync()
     {
         if (_oauthSession.Procore.RefreshToken == null)
         {

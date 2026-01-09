@@ -8,7 +8,11 @@ public static class OAuthEndpoints
 {
     public static void MapOAuthEndpoints(this WebApplication app)
     {
+        
+        // ------------------------------------------------------------
         // Launch page
+        // ------------------------------------------------------------
+
         app.MapGet("/launch", () =>
             Results.Content(@"
 <html>
@@ -26,7 +30,11 @@ public static class OAuthEndpoints
 ", "text/html")
         );
 
+
+        // ------------------------------------------------------------
         // Start OAuth flow
+        // ------------------------------------------------------------
+
         app.MapGet("/oauth/start", (HttpResponse response) =>
         {
             var stateBytes = System.Security.Cryptography.RandomNumberGenerator.GetBytes(16);
@@ -42,7 +50,11 @@ public static class OAuthEndpoints
             response.Redirect(authUrl);
         });
 
+
+        // ------------------------------------------------------------
         // OAuth callback
+        // ------------------------------------------------------------
+        
         app.MapGet("/oauth/callback", async (HttpRequest request, AuthService authService) =>
         {
             var code = request.Query["code"].ToString();
@@ -55,7 +67,7 @@ public static class OAuthEndpoints
             Console.WriteLine("OAuth callback received");
             Console.WriteLine($"code: {code}");
 
-            var (success, error) = await authService.ExchangeCodeForToken(code);
+            var (success, error) = await authService.GetProcoreTokenAsync(code);
 
             if (!success)
             {
