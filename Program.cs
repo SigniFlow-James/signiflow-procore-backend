@@ -463,6 +463,7 @@ app.MapPost("/api/send", async (
         // Convert to base64
         // ------------------
         var pdfBase64 = Convert.ToBase64String(pdfBytes);
+        Console.WriteLine(pdfBase64);
         Console.WriteLine("📤 Sending PDF to SigniFlow...");
 
         // (SigniFlow integration goes here)
