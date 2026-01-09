@@ -381,6 +381,14 @@ app.MapPost("/api/send", async (
     var companyId = companyIdProp.GetString();
     var projectId = projectIdProp.GetString();
     var commitmentId = commitmentIdProp.GetString();
+    if (companyId == null || projectId == null || commitmentId == null)
+    {
+        Console.WriteLine("❌ Missing Procore context IDs");
+        response.StatusCode = 400;
+        await response.WriteAsJsonAsync(new { error = "Missing Procore context IDs" });
+        return;
+    }
+    
     var view = context.TryGetProperty("view", out var viewProp)
         ? viewProp.GetString()
         : null;
