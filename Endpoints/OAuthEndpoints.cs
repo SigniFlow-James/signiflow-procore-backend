@@ -43,7 +43,7 @@ public static class OAuthEndpoints
             var authUrl =
                 "https://login-sandbox.procore.com/oauth/authorize" +
                 "?response_type=code" +
-                $"&client_id={AppConfig.SigniflowUsername}" +
+                $"&client_id={AppConfig.ProcoreClientId}" +
                 $"&redirect_uri={Uri.EscapeDataString(AppConfig.RedirectUri)}" +
                 $"&state={state}";
 
