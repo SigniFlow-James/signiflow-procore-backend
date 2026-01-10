@@ -1,6 +1,10 @@
 // ============================================================
 // FILE: Endpoints/OAuthEndpoints.cs
 // ============================================================
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
+
 public static class OAuthEndpoints
 {
     private static OAuthFullInfo GenerateOAuthFullInfo(

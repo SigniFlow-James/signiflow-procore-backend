@@ -2,6 +2,7 @@
 // FILE: Services/OAuthService.cs
 // ============================================================
 using System.Text.Json;
+using Microsoft.AspNetCore.Http;
 
 public class AuthService
 {

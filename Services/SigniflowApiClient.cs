@@ -1,6 +1,7 @@
 // ============================================================
 // FILE: Services/SigniflowApiClient.cs
 // ============================================================
+using Microsoft.AspNetCore.Http;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
