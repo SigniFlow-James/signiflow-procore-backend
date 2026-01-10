@@ -201,7 +201,7 @@ public class AuthService
         try
         {
             var loginRes = await _signiflowClient.LoginAsync();
-
+            Console.WriteLine("🔑 Signiflow login response: " + loginRes.TokenField);
             _oauthSession.Signiflow.TokenField = loginRes.TokenField;
             Console.WriteLine("🔁 Signiflow logged in");
             return (true, null);
