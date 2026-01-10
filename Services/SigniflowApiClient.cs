@@ -71,15 +71,14 @@ public class SigniflowApiClient
             }
             : JsonOptions;
 
-        Console.WriteLine($"🔑 body: {body.GetType()}, {body}");
+        Console.WriteLine($"🔑 body: {body.GetType()}");
         var json = JsonSerializer.Serialize(body, options);
         using var content = new StringContent(json, Encoding.UTF8, "application/json");
-
         var response = await _http.PostAsync(endpoint, content);
-        Console.WriteLine($"🔑 response: {response.Content}");
         response.EnsureSuccessStatusCode();
 
         var responseJson = await response.Content.ReadAsStringAsync();
+        Console.WriteLine($"🔑 response: {responseJson}");
         return JsonSerializer.Deserialize<T>(responseJson, options)!;
     }
 }
