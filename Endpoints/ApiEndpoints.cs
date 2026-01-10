@@ -54,21 +54,23 @@ public static class ApiEndpoints
             // Extract signer info from form
             
             if (!form.TryGetProperty("email", out var signerEmailProp) ||
-                !form.TryGetProperty("name", out var signerNameProp))
+                !form.TryGetProperty("firstNames", out var signerFirstNamesProp) ||
+                !form.TryGetProperty("lastName", out var signerLastNameProp))
             {
                 Console.WriteLine("❌ Missing signer information");
                 response.StatusCode = 400;
-                await response.WriteAsJsonAsync(new { error = "Missing signerEmail or signerFullName" });
+                await response.WriteAsJsonAsync(new { error = "Missing email, firstNames or lastName" });
                 return;
             }
 
             var signerEmail = signerEmailProp.GetString();
-            var signerFullName = signerNameProp.GetString();
+            var signerFirstNames = signerFirstNamesProp.GetString();
+            var signerLastName = signerLastNameProp.GetString();
             var customMessage = form.TryGetProperty("customMessage", out var msgProp) 
                 ? msgProp.GetString() 
                 : null;
 
-            if (string.IsNullOrWhiteSpace(signerEmail) || string.IsNullOrWhiteSpace(signerFullName))
+            if (string.IsNullOrWhiteSpace(signerEmail) || string.IsNullOrWhiteSpace(signerFirstNames) || string.IsNullOrWhiteSpace(signerLastName))
             {
                 response.StatusCode = 400;
                 await response.WriteAsJsonAsync(new { error = "Signer email and full name are required" });
@@ -100,7 +102,7 @@ public static class ApiEndpoints
 
             Console.WriteLine("📥 /api/send received");
             Console.WriteLine($"Company: {companyId}, Project: {projectId}, Commitment: {commitmentId}");
-            Console.WriteLine($"Signer: {signerFullName} ({signerEmail})");
+            Console.WriteLine($"Signer: {signerFirstNames} {signerLastName} ({signerEmail})");
 
             // Export PDF from Procore
             var (pdfBytes, exportError) = await procoreService.ExportCommitmentPdfAsync(
@@ -124,7 +126,8 @@ public static class ApiEndpoints
                 pdfBytes!,
                 documentName,
                 signerEmail,
-                signerFullName,
+                signerFirstNames,
+                signerLastName,
                 customMessage
             );
 

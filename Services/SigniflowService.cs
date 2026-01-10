@@ -33,11 +33,12 @@ public class SigniflowService
     // Create full SigniFlow workflow from a PDF byte array
     // ------------------------------------------------------------
     public async Task<(FullWorkflowResponse? response, string? error)> CreateWorkflowAsync(
-        byte[] pdfBytes,
-        string documentName,
-        string signerEmail,
-        string signerFullName,
-        string? customMessage = null)
+    byte[] pdfBytes,
+    string documentName,
+    string signerEmail,
+    string signerFirstNames,
+    string signerLastName,
+    string? customMessage = null)
     {
         try
         {
@@ -65,6 +66,11 @@ public class SigniflowService
                 SLAField = 0,
                 UseAutoTagsField = false,
                 CustomMessageField = customMessage,
+                FlattenDocumentField = false,
+                KeepContentSecurityField = false,
+                KeepCustomPropertiesField = false,
+                KeepXMPMetadataField = false,
+
                 PortfolioInformationField = new PortfolioInfo
                 {
                     CreatePortfolioField = true,
@@ -76,28 +82,30 @@ public class SigniflowService
 
             // ---------------- SIGNER ----------------
             var signerFields = new List<WorkflowUserFieldInformation>
+        {
+            new WorkflowUserFieldInformation
             {
-                new WorkflowUserFieldInformation
-                {
-                    FieldTypeField = (int)FieldType.Signature,
-                    PageNumberField = 1,
-                    TagNameField = "ProcoreGeneralContractorSignHere",
-                    WidthField = "133",
-                    HeightField = "40",
-                    XOffsetField = -40,
-                    YOffsetField = 0
-                },
-                new WorkflowUserFieldInformation
-                {
-                    FieldTypeField = (int)FieldType.DateText,
-                    PageNumberField = 1,
-                    TagNameField = "ProcoreGeneralContractorSignedDate",
-                    WidthField = "200",
-                    HeightField = "25",
-                    XOffsetField = -25,
-                    YOffsetField = 0
-                }
-            };
+                FieldTypeField = (int)FieldType.Signature,
+                PageNumberField = 1,
+                TagNameField = "ProcoreGeneralContractorSignHere",
+                WidthField = "133",
+                HeightField = "40",
+                XOffsetField = -40,
+                YOffsetField = 0,
+                IsInvisibleField = false
+            },
+            new WorkflowUserFieldInformation
+            {
+                FieldTypeField = (int)FieldType.DateText,
+                PageNumberField = 1,
+                TagNameField = "ProcoreGeneralContractorSignedDate",
+                WidthField = "200",
+                HeightField = "25",
+                XOffsetField = -25,
+                YOffsetField = 0,
+                IsInvisibleField = false
+            }
+        };
 
             var signer = new WorkflowUserInfo
             {
@@ -109,7 +117,17 @@ public class SigniflowService
                 MobileNumberField = string.Empty,
                 SendCompletedEmailField = (int)SendCompletedEmail.Yes,
                 SignReasonField = "I Accept this document.",
-                UserFullNameField = signerFullName,
+                UserFullNameField = signerFirstNames + " " + signerLastName,
+
+                // ADD THESE REQUIRED FIELDS:
+                UserFirstNameField = signerFirstNames,
+                UserLastNameField = signerLastName,
+                LatitudeField = string.Empty,
+                LongitudeField = string.Empty,
+                SignerPasswordField = string.Empty,
+                PhotoAtSigningField = 0,
+                SignatureTypeField = 0,
+
                 WorkflowUserFieldsField = signerFields
             };
 

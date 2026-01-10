@@ -42,6 +42,10 @@ public class FullWorkflowRequest
     public Token TokenField { get; set; } = null!;
     public bool UseAutoTagsField { get; set; }
     public List<WorkflowUserInfo> WorkflowUsersListField { get; set; } = new();
+    public bool FlattenDocumentField { get; set; }
+    public bool KeepContentSecurityField { get; set; }
+    public bool KeepCustomPropertiesField { get; set; }
+    public bool KeepXMPMetadataField { get; set; }
 }
 
 public class FullWorkflowResponse
@@ -75,6 +79,8 @@ public class WorkflowUserInfo
     public string UserFullNameField { get; set; } = null!;
     public string? UserLastNameField { get; set; }
     public List<WorkflowUserFieldInformation> WorkflowUserFieldsField { get; set; } = new();
+    public int PhotoAtSigningField { get; set; }
+    public int SignatureTypeField { get; set; }
 }
 
 public class WorkflowUserFieldInformation
