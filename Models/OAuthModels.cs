@@ -34,6 +34,8 @@ public class OAuthFullInfo
     public OAuthInfo? Procore { get; set; }
     public OAuthInfo? Signiflow { get; set; }
     public bool? Authenticated { get; set; }
+    public DateTime? NextExpiresAt { get; set; }
+    public string? Error { get; set; }
 }
 
 // ============================================================

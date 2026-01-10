@@ -3,6 +3,7 @@
 // ============================================================
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 
 public static class OAuthEndpoints
 {
@@ -68,9 +69,16 @@ public static class OAuthEndpoints
             Console.WriteLine($"code: {code}");
 
             var (success, error) = await authService.GetProcoreTokenAsync(code);
-
             if (!success)
             {
+                Console.WriteLine("❌ Procore token exchange failed: " + error);
+                return Results.StatusCode(500);
+            }
+
+            (success, error) = await authService.SigniflowLoginAsync();
+            if (!success)
+            {
+                Console.WriteLine("❌ Signiflow authentication failed: " + error);
                 return Results.StatusCode(500);
             }
 
@@ -86,11 +94,12 @@ public static class OAuthEndpoints
             AuthService authService,
             OAuthSession oauthSession
         ) =>
-        {  
+        {
             var procoreRefreshed = false;
             var procoreExpiryDateTime = null as DateTime?;
             var signiflowRefreshed = false;
             var loginRequired = false;
+            var error = null as string;
             if (!authService.IsProcoreAuthenticated())
             {
                 (procoreRefreshed, loginRequired) = await authService.RefreshProcoreTokenAsync();
@@ -99,21 +108,34 @@ public static class OAuthEndpoints
             {
                 procoreExpiryDateTime = DateTime.UnixEpoch.AddMilliseconds(oauthSession.Procore.ExpiresAt.Value);
             }
-            
+
             if (!authService.IsSigniflowAuthenticated())
             {
-                signiflowRefreshed = await authService.SigniflowLoginAsync();
+                (signiflowRefreshed, error) = await authService.SigniflowLoginAsync();
             }
             
+            var soonerDate = null as DateTime?;
+            if (procoreExpiryDateTime < oauthSession.Signiflow.TokenField?.TokenExpiryField)
+            {
+                soonerDate = procoreExpiryDateTime;
+            }
+            else
+            {
+                soonerDate = oauthSession.Signiflow.TokenField?.TokenExpiryField;
+            }
+
             response.StatusCode = 200;
             await response.WriteAsJsonAsync(new OAuthRefreshResponse
             {
                 Refreshed = procoreRefreshed,
                 LoginRequired = loginRequired,
-                Auth = new OAuthFullInfo {
+                Auth = new OAuthFullInfo
+                {
                     Procore = new OAuthInfo { Authenticated = procoreRefreshed, ExpiresAt = procoreExpiryDateTime },
                     Signiflow = new OAuthInfo { Authenticated = signiflowRefreshed, ExpiresAt = oauthSession.Signiflow.TokenField?.TokenExpiryField },
-                    Authenticated = true
+                    Authenticated = true,
+                    NextExpiresAt = soonerDate,
+                    Error = error
                 }
             });
         });

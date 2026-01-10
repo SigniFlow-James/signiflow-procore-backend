@@ -23,8 +23,11 @@ public static class ApiEndpoints
         {
             // Auth guard
             if (!await authService.CheckAuthAsync(response))
+            {
+                response.StatusCode = 401;
+                await response.WriteAsJsonAsync(new { error = "Authentication failed" });
                 return;
-
+            }
             // Parse body
             JsonElement body;
             try
@@ -139,7 +142,7 @@ public static class ApiEndpoints
                 success = true,
                 pdfSize = pdfBytes!.Length,
                 documentId = workflowResponse.DocIDField,
-                documentName = documentName
+                documentName
             });
         });
     }

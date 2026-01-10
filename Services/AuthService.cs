@@ -46,7 +46,7 @@ public class AuthService
     {
         if (IsProcoreAuthenticated() == false)
         {
-            response.StatusCode = StatusCodes.Status401Unauthorized;
+            response.StatusCode = 401;
             await response.WriteAsJsonAsync(new
             {
                 error = "Not authenticated with Procore"
@@ -56,7 +56,7 @@ public class AuthService
 
         else if (IsSigniflowAuthenticated() == false)
         {
-            response.StatusCode = StatusCodes.Status401Unauthorized;
+            response.StatusCode = 401;
             await response.WriteAsJsonAsync(new
             {
                 error = "Not authenticated with Signiflow"
@@ -196,7 +196,7 @@ public class AuthService
         }
     }
 
-    public async Task<bool> SigniflowLoginAsync()
+    public async Task<(bool success, string? error)> SigniflowLoginAsync()
     {
         try
         {
@@ -204,13 +204,13 @@ public class AuthService
 
             _oauthSession.Signiflow.TokenField = loginRes.TokenField;
             Console.WriteLine("🔁 Signiflow logged in");
-            return true;
+            return (true, null);
         }
         catch (Exception ex)
         {
             Console.WriteLine("❌ Signiflow login error");
             Console.WriteLine(ex);
-            return false;
+            return (false, ex.Message);
         }
     }
 }
