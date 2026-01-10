@@ -36,6 +36,7 @@ public static class OAuthEndpoints
             Error = error
         };
     }
+
     public static void MapOAuthEndpoints(this WebApplication app)
     {
 
