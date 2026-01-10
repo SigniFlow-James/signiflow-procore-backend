@@ -49,8 +49,8 @@ public static class ApiEndpoints
             }
 
             // Extract signer info from form
-            if (!form.TryGetProperty("signerEmail", out var signerEmailProp) ||
-                !form.TryGetProperty("signerFullName", out var signerNameProp))
+            if (!form.TryGetProperty("email", out var signerEmailProp) ||
+                !form.TryGetProperty("name", out var signerNameProp))
             {
                 Console.WriteLine("❌ Missing signer information");
                 response.StatusCode = 400;
