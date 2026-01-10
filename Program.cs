@@ -1,9 +1,6 @@
 // ============================================================
 // FILE: Program.cs
 // ============================================================
-using Microsoft.AspNetCore.Builder;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using FullWorkflowRestAPI.APIClasses;
 
 var builder = WebApplication.CreateBuilder(args);

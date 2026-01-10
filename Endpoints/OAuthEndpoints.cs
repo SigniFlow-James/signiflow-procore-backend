@@ -1,12 +1,41 @@
 // ============================================================
 // FILE: Endpoints/OAuthEndpoints.cs
 // ============================================================
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Server.Kestrel.Core;
-
 public static class OAuthEndpoints
 {
+    private static OAuthFullInfo GenerateOAuthFullInfo(
+        AuthService authService,
+        OAuthSession oauthSession,
+        string? error = null
+    )
+    {
+        var isProcoreAuthenticated = authService.IsProcoreAuthenticated();
+        var isSigniflowAuthenticated = authService.IsSigniflowAuthenticated();
+        var procoreExpiryDateTime = null as DateTime?;
+        var soonerDateTime = null as DateTime?;
+
+        if (oauthSession.Procore.ExpiresAt.HasValue)
+        {
+            procoreExpiryDateTime = DateTime.UnixEpoch.AddMilliseconds(oauthSession.Procore.ExpiresAt.Value);
+        }
+        if (procoreExpiryDateTime < oauthSession.Signiflow.TokenField?.TokenExpiryField)
+        {
+            soonerDateTime = procoreExpiryDateTime;
+        }
+        else
+        {
+            soonerDateTime = oauthSession.Signiflow.TokenField?.TokenExpiryField;
+        }
+
+        return new OAuthFullInfo
+        {
+            Procore = new OAuthInfo { Authenticated = isProcoreAuthenticated, ExpiresAt = procoreExpiryDateTime },
+            Signiflow = new OAuthInfo { Authenticated = isSigniflowAuthenticated, ExpiresAt = oauthSession.Signiflow.TokenField?.TokenExpiryField },
+            Authenticated = isProcoreAuthenticated && isSigniflowAuthenticated,
+            NextExpiresAt = soonerDateTime,
+            Error = error
+        };
+    }
     public static void MapOAuthEndpoints(this WebApplication app)
     {
 
@@ -95,7 +124,7 @@ public static class OAuthEndpoints
         });
 
         // Refresh token
-        app.MapPost("/api/oauth/refresh", async (
+        _ = app.MapPost("/api/oauth/refresh", async (
             HttpResponse response,
             AuthService authService,
             OAuthSession oauthSession
@@ -110,52 +139,26 @@ public static class OAuthEndpoints
             {
                 (procoreRefreshed, loginRequired) = await authService.RefreshProcoreTokenAsync();
             }
-            if (oauthSession.Procore.ExpiresAt.HasValue)
-            {
-                procoreExpiryDateTime = DateTime.UnixEpoch.AddMilliseconds(oauthSession.Procore.ExpiresAt.Value);
-            }
-
             if (!authService.IsSigniflowAuthenticated())
             {
                 (signiflowRefreshed, error) = await authService.SigniflowLoginAsync();
             }
 
-            var soonerDate = null as DateTime?;
-            if (procoreExpiryDateTime < oauthSession.Signiflow.TokenField?.TokenExpiryField)
-            {
-                soonerDate = procoreExpiryDateTime;
-            }
-            else
-            {
-                soonerDate = oauthSession.Signiflow.TokenField?.TokenExpiryField;
-            }
-
             response.StatusCode = 200;
-            await response.WriteAsJsonAsync(new OAuthRefreshResponse
-            {
-                Refreshed = procoreRefreshed,
-                LoginRequired = loginRequired,
-                Auth = new OAuthFullInfo
-                {
-                    Procore = new OAuthInfo { Authenticated = procoreRefreshed, ExpiresAt = procoreExpiryDateTime },
-                    Signiflow = new OAuthInfo { Authenticated = signiflowRefreshed, ExpiresAt = oauthSession.Signiflow.TokenField?.TokenExpiryField },
-                    Authenticated = true,
-                    NextExpiresAt = soonerDate,
-                    Error = error
-                }
-            });
+            await response.WriteAsJsonAsync(GenerateOAuthFullInfo(
+                authService,
+                oauthSession,
+                error
+            ));
         });
 
         // Auth status
         app.MapGet("/api/oauth/status", (AuthService authService, OAuthSession oauthSession) =>
         {
-            var isProcoreAuthenticated = authService.IsProcoreAuthenticated();
-
-            return Results.Json(new
-            {
-                procoreAuthenticated = isProcoreAuthenticated,
-                procoreExpiresAt = oauthSession.Procore.ExpiresAt
-            });
+            return Results.Json(GenerateOAuthFullInfo(
+                authService,
+                oauthSession
+            ));
         });
     }
 }
