@@ -134,17 +134,17 @@ public static class OAuthEndpoints
             var procoreRefreshed = false;
             var procoreExpiryDateTime = null as DateTime?;
             var signiflowRefreshed = false;
-            var loginRequired = false;
-            var error = null as string;
+            var procoreError = null as string;
+            var signiflowError = null as string;
             if (!authService.IsProcoreAuthenticated())
             {
-                (procoreRefreshed, loginRequired) = await authService.RefreshProcoreTokenAsync();
+                (procoreRefreshed, procoreError) = await authService.RefreshProcoreTokenAsync();
             }
             if (!authService.IsSigniflowAuthenticated())
             {
-                (signiflowRefreshed, error) = await authService.SigniflowLoginAsync();
+                (signiflowRefreshed, signiflowError) = await authService.SigniflowLoginAsync();
             }
-
+            var error = procoreError ?? $"Procore Error: {procoreError}, " + signiflowError ?? $"Signiflow Error: {signiflowError}";
             response.StatusCode = 200;
             await response.WriteAsJsonAsync(GenerateOAuthFullInfo(
                 authService,

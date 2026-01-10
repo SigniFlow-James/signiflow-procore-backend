@@ -132,11 +132,11 @@ public class AuthService
     // Refresh Procore token
     // ------------------------------------------------------------
 
-    public async Task<(bool refreshed, bool loginRequired)> RefreshProcoreTokenAsync()
+    public async Task<(bool refreshed, string? error)> RefreshProcoreTokenAsync()
     {
         if (_oauthSession.Procore.RefreshToken == null)
         {
-            return (false, true);
+            return (false, "No refresh token available");
         }
 
         try
@@ -167,7 +167,7 @@ public class AuthService
             if (!tokenRes.IsSuccessStatusCode)
             {
                 Console.WriteLine("❌ Refresh failed: " + tokenJson);
-                return (false, true);
+                return (false, "Refresh failed");
             }
 
             var tokenData = JsonSerializer.Deserialize<JsonElement>(tokenJson)!;
@@ -185,13 +185,13 @@ public class AuthService
                 tokenData.GetProperty("expires_in").GetInt32() * 1000;
 
             Console.WriteLine("🔁 Procore token refreshed");
-            return (true, false);
+            return (true, null);
         }
         catch (Exception ex)
         {
             Console.WriteLine("❌ Refresh error");
             Console.WriteLine(ex);
-            return (false, false);
+            return (false, ex.Message);
         }
     }
 
