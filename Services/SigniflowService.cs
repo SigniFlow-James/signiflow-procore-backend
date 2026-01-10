@@ -115,6 +115,8 @@ public class SigniflowService
             workflowRequest.WorkflowUsersListField = new List<WorkflowUserInfo> { signer };
 
             // ---------------- EXECUTE ----------------
+            Console.WriteLine("Workflow Request:");
+            Console.WriteLine(workflowRequest);
             var workflowResponse = await _client.FullWorkflowAsync(workflowRequest);
             if (workflowResponse.ResultField != "Success")
                 return (null, workflowResponse.ResultField);
