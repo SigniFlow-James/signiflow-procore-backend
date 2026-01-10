@@ -39,6 +39,7 @@ public static class ApiEndpoints
                 return;
             }
 
+            Console.WriteLine($"📥 form: {body}");
             if (!body.TryGetProperty("form", out var form) ||
                 !body.TryGetProperty("context", out var context))
             {
@@ -49,6 +50,7 @@ public static class ApiEndpoints
             }
 
             // Extract signer info from form
+            
             if (!form.TryGetProperty("email", out var signerEmailProp) ||
                 !form.TryGetProperty("name", out var signerNameProp))
             {
