@@ -44,6 +44,10 @@ builder.Services.AddHttpClient<SigniflowApiClient>(client =>
 {
     client.BaseAddress = new Uri(AppConfig.SigniflowApiBase);
     client.Timeout = TimeSpan.FromSeconds(30);
+    client.DefaultRequestHeaders.Accept.Clear();
+    client.DefaultRequestHeaders.Accept.Add(
+        new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json")
+    );
 });
 builder.Services.AddScoped<SigniflowService>();
 
