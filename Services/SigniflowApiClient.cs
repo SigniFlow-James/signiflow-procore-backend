@@ -41,7 +41,7 @@ public class SigniflowApiClient
             UserNameField = _username,
             PasswordField = _password
         };
-
+        Console.WriteLine("🔑 Signing in to SigniFlow as " + _username + _password);
         return await PostAsync<LoginResponse>("Login", request);
     }
 
@@ -71,7 +71,6 @@ public class SigniflowApiClient
             }
             : JsonOptions;
 
-        Console.WriteLine($"🔑 body: {body.GetType()}");
         var json = JsonSerializer.Serialize(body, options);
         using var content = new StringContent(json, Encoding.UTF8, "application/json");
         var response = await _http.PostAsync(endpoint, content);
