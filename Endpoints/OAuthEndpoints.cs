@@ -72,6 +72,10 @@ public static class OAuthEndpoints
             if (!success)
             {
                 Console.WriteLine("❌ Procore token exchange failed: " + error);
+                Results.Content(@"
+                    <h2>OAuth Failure</h2>
+                    <p>Procore was unable to authenticate you.</p>
+                    ", "text/html");
                 return Results.StatusCode(500);
             }
 
@@ -79,6 +83,10 @@ public static class OAuthEndpoints
             if (!success)
             {
                 Console.WriteLine("❌ Signiflow authentication failed: " + error);
+                Results.Content(@"
+                    <h2>OAuth Failure</h2>
+                    <p>Signiflow was unable to authenticate you.</p>
+                    ", "text/html");
                 return Results.StatusCode(500);
             }
 
@@ -113,7 +121,7 @@ public static class OAuthEndpoints
             {
                 (signiflowRefreshed, error) = await authService.SigniflowLoginAsync();
             }
-            
+
             var soonerDate = null as DateTime?;
             if (procoreExpiryDateTime < oauthSession.Signiflow.TokenField?.TokenExpiryField)
             {

@@ -1,5 +1,5 @@
 // ============================================================
-// FILE: Services/AuthService.cs
+// FILE: Services/OAuthService.cs
 // ============================================================
 using System.Text.Json;
 using Microsoft.AspNetCore.Http;
@@ -216,5 +216,5 @@ public class AuthService
 }
 
 // ============================================================
-// END FILE: Services/AuthService.cs
+// END FILE: Services/OAuthService.cs
 // ============================================================
