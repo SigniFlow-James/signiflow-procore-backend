@@ -62,7 +62,7 @@ public class SigniflowApiClient
     private async Task<T> PostAsync<T>(
         string endpoint,
         object body,
-        bool useMicrosoftDateFormat = false)
+        bool useMicrosoftDateFormat = true)
     {
         var options = useMicrosoftDateFormat
             ? new JsonSerializerOptions(JsonOptions)
@@ -91,14 +91,31 @@ internal sealed class MicrosoftDateTimeConverter : JsonConverter<DateTime>
     public override DateTime Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
         var value = reader.GetString();
-        var millis = long.Parse(value![6..^2]);
+        if (string.IsNullOrEmpty(value))
+        {
+            return DateTime.MinValue;
+        }
+
+        // Format: \/Date(1768049260000+0000)\/
+        // Extract the timestamp between /Date( and +/- or )
+        var startIndex = value.IndexOf('(') + 1;
+        var endIndex = value.IndexOfAny(['+', '-', ')'], startIndex);
+        
+        if (startIndex < 1 || endIndex < 0)
+        {
+            throw new JsonException($"Invalid date format: {value}");
+        }
+
+        var millisString = value.Substring(startIndex, endIndex - startIndex);
+        var millis = long.Parse(millisString);
+        
         return DateTimeOffset.FromUnixTimeMilliseconds(millis).UtcDateTime;
     }
 
     public override void Write(Utf8JsonWriter writer, DateTime value, JsonSerializerOptions options)
     {
         var millis = new DateTimeOffset(value).ToUnixTimeMilliseconds();
-        writer.WriteStringValue($"\\/Date({millis})\\/");
+        writer.WriteStringValue($"\\/Date({millis}+0000)\\/");
     }
 }
 
