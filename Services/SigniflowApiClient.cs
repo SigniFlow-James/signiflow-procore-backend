@@ -51,8 +51,7 @@ public class SigniflowApiClient
     {
         return await PostAsync<FullWorkflowResponse>(
             "FullWorkflow",
-            request,
-            useMicrosoftDateFormat: true);
+            request);
     }
 
     // ------------------------------------------------------------
@@ -72,7 +71,7 @@ public class SigniflowApiClient
 
         var json = JsonSerializer.Serialize(body, options);
         using var content = new StringContent(json, Encoding.UTF8, "application/json");
-        Console.WriteLine($"📍 Posting to: {_http.BaseAddress}{endpoint}");
+        Console.WriteLine($"📍 Posting to: {_http.BaseAddress}{endpoint} with {content}");
         var response = await _http.PostAsync(endpoint, content);
         response.EnsureSuccessStatusCode();
 

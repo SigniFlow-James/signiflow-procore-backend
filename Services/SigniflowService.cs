@@ -63,7 +63,7 @@ public class SigniflowService
                 SendWorkflowEmailsField = true,
                 SLAField = 0,
                 UseAutoTagsField = false,
-                CustomMessageField = customMessage, // Now comes from frontend
+                CustomMessageField = customMessage,
                 PortfolioInformationField = new PortfolioInfo
                 {
                     CreatePortfolioField = true,
