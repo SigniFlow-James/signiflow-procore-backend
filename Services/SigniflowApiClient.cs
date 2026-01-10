@@ -71,6 +71,7 @@ public class SigniflowApiClient
             }
             : JsonOptions;
 
+        Console.WriteLine("🔑", body);
         var json = JsonSerializer.Serialize(body, options);
         using var content = new StringContent(json, Encoding.UTF8, "application/json");
 
