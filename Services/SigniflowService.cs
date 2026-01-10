@@ -1,6 +1,7 @@
 // ============================================================
 // FILE: Services/SigniflowService.cs
 // ============================================================
+using System.Text.Json;
 using static FullWorkflowRestAPI.APIClasses.Enums;
 
 namespace FullWorkflowRestAPI.APIClasses;
@@ -116,7 +117,7 @@ public class SigniflowService
 
             // ---------------- EXECUTE ----------------
             Console.WriteLine("Workflow Request:");
-            Console.WriteLine(workflowRequest);
+            Console.WriteLine(JsonSerializer.Serialize(workflowRequest, new JsonSerializerOptions { WriteIndented = true }));
             var workflowResponse = await _client.FullWorkflowAsync(workflowRequest);
             if (workflowResponse.ResultField != "Success")
                 return (null, workflowResponse.ResultField);
