@@ -50,6 +50,7 @@ public class SigniflowService
 
             // ---------------- DOCUMENT ----------------
             var encodedPdf = Convert.ToBase64String(pdfBytes, Base64FormattingOptions.InsertLineBreaks);
+            Console.WriteLine($"📄 PDF size: {pdfBytes.Length} bytes, encoded size: {encodedPdf.Length} chars");
 
             var workflowRequest = new FullWorkflowRequest
             {
