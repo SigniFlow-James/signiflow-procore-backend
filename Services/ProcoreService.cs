@@ -30,10 +30,8 @@ public class ProcoreService
     {
         try
         {
-            using var httpClient = new HttpClient();
-
             var exportUrl =
-                $"{AppConfig.ProcoreApiBase}/rest/v2.0/companies/{companyId}/projects/{projectId}/commitment_contracts/{commitmentId}/pdf";
+                $"/companies/{companyId}/projects/{projectId}/commitment_contracts/{commitmentId}/pdf";
 
             // Start export (POST)
             var postReq = new HttpRequestMessage(HttpMethod.Post, exportUrl);
@@ -41,8 +39,13 @@ public class ProcoreService
                 new AuthenticationHeaderValue("Bearer", _oauthSession.Procore.AccessToken);
             postReq.Headers.Add("Procore-Company-Id", companyId);
 
-            var exportPost = await httpClient.SendAsync(postReq);
-            Console.WriteLine("Export response status: " + (int)exportPost.StatusCode);
+            await _procoreClient.SendAsync(
+                HttpMethod.Post,
+                "2.0",
+                _oauthSession.Procore.AccessToken,
+                exportUrl,
+                companyId
+                );
 
             // Poll for PDF (GET)
             int retries = AppConfig.RetryLimit;
@@ -55,7 +58,12 @@ public class ProcoreService
                     new AuthenticationHeaderValue("Bearer", _oauthSession.Procore.AccessToken);
                 getReq.Headers.Add("Procore-Company-Id", companyId);
 
-                var exportResponse = await httpClient.SendAsync(getReq);
+                var exportResponse = await _procoreClient.SendAsync(
+                    HttpMethod.Get,
+                    "2.0",
+                    exportUrl,
+                    companyId
+                    );
 
                 if (exportResponse.StatusCode == System.Net.HttpStatusCode.OK)
                 {
@@ -100,7 +108,6 @@ public class ProcoreService
     // ------------------------------------------------------------
 
     public async Task<CreateUploadResponse> CreateUploadAsync(
-    HttpClient procoreClient,
     long projectId,
     string fileName,
     string contentType,
@@ -128,8 +135,12 @@ public class ProcoreService
         }
         };
 
-        var response = await procoreClient.PostAsJsonAsync(
-            $"/rest/v1.1/projects/{projectId}/uploads",
+        var response = await _procoreClient.SendAsync(
+            HttpMethod.Post,
+            "1.1",
+            _oauthSession.Procore.AccessToken,
+            $"projects/{projectId}/uploads",
+            null,
             payload
         );
 
@@ -163,7 +174,6 @@ public class ProcoreService
         var fileContent = new ByteArrayContent(fileBytes);
         fileContent.Headers.ContentType =
             new MediaTypeHeaderValue(contentType);
-
         form.Add(fileContent, "file", fileName);
 
         var response = await s3Client.PostAsync(upload.url, form);
@@ -176,11 +186,13 @@ public class ProcoreService
     // ------------------------------------------------------------
 
     public async Task<List<DocumentFolder>> GetDocumentFoldersAsync(
-    HttpClient procoreClient,
     long projectId)
     {
-        var response = await procoreClient.GetAsync(
-            $"/rest/v1.0/projects/{projectId}/document_folders"
+        var response = await _procoreClient.SendAsync(
+            HttpMethod.Get,
+            "1.1",
+            _oauthSession.Procore.AccessToken,
+            $"projects/{projectId}/document_folders"
         );
 
         response.EnsureSuccessStatusCode();
@@ -206,7 +218,6 @@ public class ProcoreService
     // ------------------------------------------------------------
 
     public async Task<DocumentFolder> CreateDocumentFolderAsync(
-    HttpClient procoreClient,
     long projectId,
     string folderName,
     long? parentFolderId)
@@ -223,8 +234,13 @@ public class ProcoreService
         var json = JsonSerializer.Serialize(payload);
         using var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-        var response = await procoreClient.PostAsync(
-            $"/rest/v1.0/projects/{projectId}/document_folders",
+        var response = await _procoreClient.SendAsync
+        (
+            HttpMethod.Post,
+            "1.0",
+            _oauthSession.Procore.AccessToken,
+            $"projects/{projectId}/document_folders",
+            null,
             content
         );
 
@@ -240,7 +256,6 @@ public class ProcoreService
     // ------------------------------------------------------------
 
     public async Task CreateDocumentAsync(
-    HttpClient procoreClient,
     long projectId,
     long folderId,
     string fileName,
@@ -256,12 +271,17 @@ public class ProcoreService
             }
         };
 
-        var response = await procoreClient.PostAsJsonAsync(
-            $"/rest/v1.0/projects/{projectId}/documents",
+        var response = await _procoreClient.SendAsync(
+            HttpMethod.Post,
+            "1.0",
+            _oauthSession.Procore.AccessToken,
+            $"projects/{projectId}/documents",
+            null,
             payload
         );
 
         response.EnsureSuccessStatusCode();
+
     }
 
 }

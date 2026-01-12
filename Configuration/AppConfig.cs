@@ -1,5 +1,5 @@
 // ============================================================
-// FILE: Configuration/AppConfig.cs (UPDATE - Add SigniFlow config)
+// FILE: Configuration/AppConfig.cs
 // ============================================================
 public static class AppConfig
 {

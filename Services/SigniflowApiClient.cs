@@ -32,7 +32,7 @@ public class SigniflowApiClient
     }
 
     // ------------------------------------------------------------
-    // Login (credentials resolved internally)
+    // Login
     // ------------------------------------------------------------
     public async Task<LoginResponse> LoginAsync()
     {
