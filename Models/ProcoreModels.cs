@@ -1,5 +1,5 @@
 // ============================================================
-// FILE: Models/ProcoreSession.cs
+// FILE: Models/ProcoreModels.cs
 // ============================================================
 namespace Procore.APIClasses;
 
@@ -52,5 +52,5 @@ public class DocumentFolder
 
 
 // ============================================================
-// END FILE: Models/ProcoreSession.cs
+// END FILE: Models/ProcoreModels.cs
 // ============================================================
