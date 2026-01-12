@@ -81,7 +81,7 @@ public class SigniflowService
                 }
             };
 
-            // ---------------- SIGNER ----------------
+            // ---------------- WORKFLOW SIGNER FIELDS ----------------
             var signerFields = new List<WorkflowUserFieldInformation>
         {
             new WorkflowUserFieldInformation
@@ -91,8 +91,8 @@ public class SigniflowService
                 TagNameField = "ProcoreGeneralContractorSignHere",
                 WidthField = "133",
                 HeightField = "40",
-                XOffsetField = -40,
-                YOffsetField = 0,
+                XOffsetField = 10,
+                YOffsetField = -45,
                 IsInvisibleField = false
             },
             new WorkflowUserFieldInformation
@@ -102,12 +102,12 @@ public class SigniflowService
                 TagNameField = "ProcoreGeneralContractorSignedDate",
                 WidthField = "200",
                 HeightField = "25",
-                XOffsetField = -25,
-                YOffsetField = 0,
+                XOffsetField = 0,
+                YOffsetField = -25,
                 IsInvisibleField = false
             }
         };
-
+            // ---------------- WORKFLOW USER INFO ----------------
             var signer = new WorkflowUserInfo
             {
                 ActionField = (int)ActionRequired.SignDocument,
@@ -119,13 +119,11 @@ public class SigniflowService
                 SendCompletedEmailField = (int)SendCompletedEmail.Yes,
                 SignReasonField = "I Accept this document.",
                 UserFullNameField = signerFirstNames + " " + signerLastName,
-
-                // ADD THESE REQUIRED FIELDS:
                 UserFirstNameField = signerFirstNames,
                 UserLastNameField = signerLastName,
-                LatitudeField = string.Empty,
-                LongitudeField = string.Empty,
-                SignerPasswordField = string.Empty,
+                LatitudeField = "",
+                LongitudeField = "",
+                SignerPasswordField = "",
                 PhotoAtSigningField = 0,
                 SignatureTypeField = 0,
 
