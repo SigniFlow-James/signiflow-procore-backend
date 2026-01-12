@@ -61,6 +61,7 @@ public class ProcoreService
                 var exportResponse = await _procoreClient.SendAsync(
                     HttpMethod.Get,
                     "2.0",
+                    _oauthSession.Procore.AccessToken,
                     exportUrl,
                     companyId
                     );
