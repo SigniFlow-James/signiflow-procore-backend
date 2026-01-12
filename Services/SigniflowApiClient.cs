@@ -66,13 +66,16 @@ public class SigniflowApiClient
         var options = useMicrosoftDateFormat
             ? new JsonSerializerOptions(JsonOptions)
             {
-                Converters = { new MicrosoftDateTimeConverter() }
+                Converters = { new MicrosoftDateTimeConverter() },
+                WriteIndented = true
             }
             : JsonOptions;
 
         var json = JsonSerializer.Serialize(body, options);
         using var content = new StringContent(json, Encoding.UTF8, "application/json");
         Console.WriteLine($"📍 Posting to: {_http.BaseAddress}{endpoint}");
+        Console.WriteLine($"📤 body: {json}");
+        Console.WriteLine($"📤 Content: {content}");
         var response = await _http.PostAsync(endpoint, content);
         response.EnsureSuccessStatusCode();
 

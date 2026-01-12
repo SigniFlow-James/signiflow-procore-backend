@@ -16,7 +16,7 @@ public static class OAuthEndpoints
         var isProcoreAuthenticated = authService.IsProcoreAuthenticated();
         var isSigniflowAuthenticated = authService.IsSigniflowAuthenticated();
         var procoreExpiryDateTime = null as DateTime?;
-        var soonerDateTime = null as DateTime?;
+        DateTime? soonerDateTime;
 
         if (oauthSession.Procore.ExpiresAt.HasValue)
         {
@@ -102,6 +102,8 @@ public static class OAuthEndpoints
             Console.WriteLine("OAuth callback received");
             Console.WriteLine($"code: {code}");
 
+            // Procore Login
+
             var (success, error) = await authService.GetProcoreTokenAsync(code);
             if (!success)
             {
@@ -111,6 +113,8 @@ public static class OAuthEndpoints
                     <p>Procore was unable to authenticate you.</p>
                     ", "text/html");
             }
+
+            // Signiflow Login
 
             (success, error) = await authService.SigniflowLoginAsync();
             if (!success)
