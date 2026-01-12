@@ -1,7 +1,12 @@
 // ============================================================
-// FILE: Models/SigniFlowModels.cs
+// FILE: Models/SigniflowModels.cs
 // ============================================================
-namespace FullWorkflowRestAPI.APIClasses;
+namespace Signiflow.APIClasses;
+
+public class SigniflowSession
+{
+    public Token? TokenField { get; set; }
+}
 
 // Login Models
 public class LoginRequest

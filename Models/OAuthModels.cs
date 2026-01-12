@@ -3,8 +3,8 @@
 // ============================================================
 public class OAuthSession
 {
-    public ProcoreSession Procore { get; set; } = new();
-    public SigniflowSession Signiflow { get; set; } = new();
+    public Procore.APIClasses.ProcoreSession Procore { get; set; } = new();
+    public Signiflow.APIClasses.SigniflowSession Signiflow { get; set; } = new();
 }
 
 // OAuth Auth Info (for successful refresh)

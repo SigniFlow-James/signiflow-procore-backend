@@ -6,7 +6,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace FullWorkflowRestAPI.APIClasses;
+namespace Signiflow.APIClasses;
 
 public class SigniflowApiClient
 {

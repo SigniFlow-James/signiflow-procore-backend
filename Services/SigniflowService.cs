@@ -2,9 +2,9 @@
 // FILE: Services/SigniflowService.cs
 // ============================================================
 using System.Text.Json;
-using static FullWorkflowRestAPI.APIClasses.Enums;
+using static Signiflow.APIClasses.Enums;
 
-namespace FullWorkflowRestAPI.APIClasses;
+namespace Signiflow.APIClasses;
 
 public class SigniflowService
 {

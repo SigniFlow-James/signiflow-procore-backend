@@ -1,7 +1,7 @@
 // ============================================================
 // FILE: Models/Enums.cs
 // ============================================================
-namespace FullWorkflowRestAPI.APIClasses;
+namespace Signiflow.APIClasses;
 
 
 public static class Enums

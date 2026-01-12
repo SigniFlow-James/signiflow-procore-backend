@@ -2,14 +2,20 @@
 // FILE: Services/ProcoreService.cs
 // ============================================================
 using System.Net.Http.Headers;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+namespace Procore.APIClasses;
 
 public class ProcoreService
 {
     private readonly OAuthSession _oauthSession;
+    private readonly ProcoreApiClient _procoreClient;
 
-    public ProcoreService(OAuthSession oauthSession)
+    public ProcoreService(OAuthSession oauthSession, ProcoreApiClient procoreClient)
     {
         _oauthSession = oauthSession;
+        _procoreClient = procoreClient;
     }
 
 
@@ -87,6 +93,177 @@ public class ProcoreService
             return (null, "Error exporting PDF");
         }
     }
+
+
+    // ------------------------------------------------------------
+    // Create upload in Procore
+    // ------------------------------------------------------------
+
+    public async Task<CreateUploadResponse> CreateUploadAsync(
+    HttpClient procoreClient,
+    long projectId,
+    string fileName,
+    string contentType,
+    byte[] fileBytes)
+    {
+        var payload = new CreateUploadRequest
+        {
+            response_filename = fileName,
+            response_content_type = contentType,
+            attachment_content_disposition = true,
+            size = fileBytes.Length,
+            segments = new()
+        {
+            new UploadSegment
+            {
+                size = fileBytes.Length,
+                sha256 = Convert.ToHexString(
+                    SHA256.HashData(fileBytes)
+                ).ToLowerInvariant(),
+                md5 = Convert.ToHexString(
+                    MD5.HashData(fileBytes)
+                ).ToLowerInvariant(),
+                etag = Guid.NewGuid().ToString("N")
+            }
+        }
+        };
+
+        var response = await procoreClient.PostAsJsonAsync(
+            $"/rest/v1.1/projects/{projectId}/uploads",
+            payload
+        );
+
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<CreateUploadResponse>()
+               ?? throw new InvalidOperationException("Upload creation failed");
+    }
+
+
+    // ------------------------------------------------------------
+    // Upload file to S3 using provided upload info
+    // ------------------------------------------------------------
+
+    public async Task UploadFileToS3Async(
+    CreateUploadResponse upload,
+    byte[] fileBytes,
+    string fileName,
+    string contentType)
+    {
+        using var s3Client = new HttpClient();
+
+        using var form = new MultipartFormDataContent();
+
+        // VERY IMPORTANT: fields must be added EXACTLY as provided
+        foreach (var field in upload.fields)
+        {
+            form.Add(new StringContent(field.Value), field.Key);
+        }
+
+        // File field MUST be named "file"
+        var fileContent = new ByteArrayContent(fileBytes);
+        fileContent.Headers.ContentType =
+            new MediaTypeHeaderValue(contentType);
+
+        form.Add(fileContent, "file", fileName);
+
+        var response = await s3Client.PostAsync(upload.url, form);
+        response.EnsureSuccessStatusCode();
+    }
+
+
+    // ------------------------------------------------------------
+    // Get document folders in Procore project
+    // ------------------------------------------------------------
+
+    public async Task<List<DocumentFolder>> GetDocumentFoldersAsync(
+    HttpClient procoreClient,
+    long projectId)
+    {
+        var response = await procoreClient.GetAsync(
+            $"/rest/v1.0/projects/{projectId}/document_folders"
+        );
+
+        response.EnsureSuccessStatusCode();
+
+        var json = await response.Content.ReadAsStringAsync();
+        return JsonSerializer.Deserialize<List<DocumentFolder>>(json)!;
+    }
+
+    public long? FindFolderId(
+    IEnumerable<DocumentFolder> folders,
+    string folderName,
+    long? parentId = null)
+    {
+        return folders.FirstOrDefault(f =>
+            f.name.Equals(folderName, StringComparison.OrdinalIgnoreCase) &&
+            f.parent_id == parentId
+        )?.id;
+    }
+
+
+    // ------------------------------------------------------------
+    // Create document folder in Procore
+    // ------------------------------------------------------------
+
+    public async Task<DocumentFolder> CreateDocumentFolderAsync(
+    HttpClient procoreClient,
+    long projectId,
+    string folderName,
+    long? parentFolderId)
+    {
+        var payload = new
+        {
+            document_folder = new DocumentFolder
+            {
+                name = folderName,
+                parent_id = parentFolderId
+            }
+        };
+
+        var json = JsonSerializer.Serialize(payload);
+        using var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+        var response = await procoreClient.PostAsync(
+            $"/rest/v1.0/projects/{projectId}/document_folders",
+            content
+        );
+
+        response.EnsureSuccessStatusCode();
+
+        var responseJson = await response.Content.ReadAsStringAsync();
+        return JsonSerializer.Deserialize<DocumentFolder>(responseJson)!;
+    }
+
+
+    // ------------------------------------------------------------
+    // Create document record in Procore
+    // ------------------------------------------------------------
+
+    public async Task CreateDocumentAsync(
+    HttpClient procoreClient,
+    long projectId,
+    long folderId,
+    string fileName,
+    string uploadUuid)
+    {
+        var payload = new
+        {
+            document = new DocumentPayload
+            {
+                name = fileName,
+                upload_uuid = uploadUuid,
+                parent_id = folderId
+            }
+        };
+
+        var response = await procoreClient.PostAsJsonAsync(
+            $"/rest/v1.0/projects/{projectId}/documents",
+            payload
+        );
+
+        response.EnsureSuccessStatusCode();
+    }
+
 }
 
 // ============================================================
