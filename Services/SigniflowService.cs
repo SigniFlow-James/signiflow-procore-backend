@@ -91,8 +91,8 @@ public class SigniflowService
                 TagNameField = "ProcoreGeneralContractorSignHere",
                 WidthField = "133",
                 HeightField = "40",
-                XOffsetField = 10,
-                YOffsetField = -45,
+                XOffsetField = 0,
+                YOffsetField = -35,
                 IsInvisibleField = false
             },
             new WorkflowUserFieldInformation
@@ -103,7 +103,7 @@ public class SigniflowService
                 WidthField = "200",
                 HeightField = "25",
                 XOffsetField = 0,
-                YOffsetField = -25,
+                YOffsetField = -20,
                 IsInvisibleField = false
             }
         };
