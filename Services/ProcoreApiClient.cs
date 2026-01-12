@@ -34,11 +34,10 @@ public class ProcoreApiClient
     // Aquire Procore tokens
     // ------------------------------------------------------------
 
-    private async Task<(ProcoreSession? session, string? error)> GetProcoreTokenAsync(string code)
+    public async Task<(ProcoreSession? session, string? error)> GetProcoreTokenAsync(string code)
     {
         try
         {
-            using var httpClient = new HttpClient();
 
             var payload = new
             {
@@ -55,7 +54,7 @@ public class ProcoreApiClient
                 "application/json"
             );
 
-            var tokenRes = await httpClient.PostAsync(
+            var tokenRes = await _http.PostAsync(
                 "https://sandbox.procore.com/oauth/token",
                 content
             );
