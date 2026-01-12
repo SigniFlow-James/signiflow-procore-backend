@@ -33,12 +33,20 @@ builder.Services.AddRouting();
 
 
 // ------------------------------------------------------------
-// Register singleton services
+// Register services
 // ------------------------------------------------------------
 
 builder.Services.AddSingleton<OAuthSession>();
 builder.Services.AddSingleton<AuthService>();
-builder.Services.AddSingleton<ProcoreService>();
+
+// Register Procore Services
+builder.Services.AddHttpClient<ProcoreApiClient>(client =>
+{
+    client.BaseAddress = new Uri(AppConfig.ProcoreApiBase);
+    client.Timeout = TimeSpan.FromSeconds(30);
+});
+builder.Services.AddScoped<ProcoreService>();
+
 
 // Register SigniFlow services
 builder.Services.AddHttpClient<SigniflowApiClient>(client =>

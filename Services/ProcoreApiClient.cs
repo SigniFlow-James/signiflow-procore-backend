@@ -27,8 +27,7 @@ public class ProcoreApiClient
         _secretKey = AppConfig.ProcoreClientSecret
             ?? throw new InvalidOperationException("SIGNIFLOW_PASSWORD environment variable not configured");
         
-        _redirect = AppConfig.RedirectUri
-            ?? throw new InvalidOperationException("SIGNIFLOW_PASSWORD environment variable not configured");
+        _redirect = AppConfig.RedirectUri;
     }
 
     // ------------------------------------------------------------
