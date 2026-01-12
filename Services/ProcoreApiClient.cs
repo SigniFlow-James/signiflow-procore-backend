@@ -96,8 +96,6 @@ public class ProcoreApiClient
     {
         try
         {
-            using var httpClient = new HttpClient();
-
             var payload = new
             {
                 grant_type = "refresh_token",
@@ -112,7 +110,7 @@ public class ProcoreApiClient
                 "application/json"
             );
 
-            var tokenRes = await httpClient.PostAsync(
+            var tokenRes = await _http.PostAsync(
                 "https://sandbox.procore.com/oauth/token",
                 content
             );
@@ -158,7 +156,7 @@ public class ProcoreApiClient
         object? body = null
         )
     {
-        endpoint = $"{_http.BaseAddress}/rest/v{targetVersion}/{endpoint}";
+        endpoint = $"{_http.BaseAddress}rest/v{targetVersion}/{endpoint}";
         // Start export
         var request = new HttpRequestMessage(method, endpoint);
         request.Headers.Authorization =

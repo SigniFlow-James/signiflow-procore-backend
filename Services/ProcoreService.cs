@@ -31,7 +31,7 @@ public class ProcoreService
         try
         {
             var exportUrl =
-                $"/companies/{companyId}/projects/{projectId}/commitment_contracts/{commitmentId}/pdf";
+                $"companies/{companyId}/projects/{projectId}/commitment_contracts/{commitmentId}/pdf";
 
             // Start export (POST)
             var postReq = new HttpRequestMessage(HttpMethod.Post, exportUrl);
