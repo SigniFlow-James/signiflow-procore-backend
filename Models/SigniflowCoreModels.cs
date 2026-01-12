@@ -51,7 +51,10 @@ public class FullWorkflowRequest
 public class FullWorkflowResponse
 {
     public string? ResultField { get; set; }
-    public string? DocIDField { get; set; }
+    public string? DocField { get; set; }
+    public int? DocIDField { get; set; }
+    public int? PortfolioIDField { get; set; }
+    public string? StatusField { get; set; }
 }
 
 public class PortfolioInfo
