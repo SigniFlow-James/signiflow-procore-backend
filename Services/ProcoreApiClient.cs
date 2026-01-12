@@ -171,7 +171,6 @@ public class ProcoreApiClient
             request.Content = new StringContent(json, Encoding.UTF8, "application/json");
         }
         var response = await _http.SendAsync(request);
-        response.EnsureSuccessStatusCode();
         return response;
     }
 
