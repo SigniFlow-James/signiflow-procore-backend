@@ -102,7 +102,7 @@ internal sealed class MicrosoftDateTimeConverter : JsonConverter<DateTime>
         // Extract the timestamp between /Date( and +/- or )
         var startIndex = value.IndexOf('(') + 1;
         var endIndex = value.IndexOfAny(['+', '-', ')'], startIndex);
-        
+
         if (startIndex < 1 || endIndex < 0)
         {
             throw new JsonException($"Invalid date format: {value}");
@@ -110,14 +110,16 @@ internal sealed class MicrosoftDateTimeConverter : JsonConverter<DateTime>
 
         var millisString = value.Substring(startIndex, endIndex - startIndex);
         var millis = long.Parse(millisString);
-        
+
         return DateTimeOffset.FromUnixTimeMilliseconds(millis).UtcDateTime;
     }
 
     public override void Write(Utf8JsonWriter writer, DateTime value, JsonSerializerOptions options)
     {
-        var millis = new DateTimeOffset(value).ToUnixTimeMilliseconds();
-        writer.WriteStringValue($"\\/Date({millis}+0000)\\/");
+        var dto = new DateTimeOffset(value);
+        var millis = dto.ToUnixTimeMilliseconds();
+        var offset = dto.ToString("zzz").Replace(":", "");
+        writer.WriteStringValue($"/Date({millis}{offset})/");
     }
 }
 
