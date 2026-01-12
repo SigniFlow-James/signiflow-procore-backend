@@ -173,34 +173,6 @@ public class ProcoreApiClient
         var response = await _http.SendAsync(request);
         return response;
     }
-
-    public async Task<T> ApiV1<T>(
-        HttpMethod method,
-        string accessToken,
-        string endpoint,
-        string companyId,
-        string projectId,
-        object? body = null
-        )
-    {
-        endpoint = $"{_http.BaseAddress}/rest/v2.0/companies/{companyId}/projects/{projectId}/{endpoint}";
-        // Start export
-        var request = new HttpRequestMessage(method, endpoint);
-        request.Headers.Authorization =
-            new AuthenticationHeaderValue("Bearer", accessToken);
-        request.Headers.Add("Procore-Company-Id", companyId);
-
-        if (body != null)
-        {
-            var json = JsonSerializer.Serialize(body);
-            request.Content = new StringContent(json, Encoding.UTF8, "application/json");
-        }
-        var response = await _http.SendAsync(request);
-        response.EnsureSuccessStatusCode();
-        var responseJson = await response.Content.ReadAsStringAsync();
-        Console.WriteLine($"🔑 response: {responseJson}");
-        return JsonSerializer.Deserialize<T>(responseJson)!;
-    }
 }
 
 // ============================================================
