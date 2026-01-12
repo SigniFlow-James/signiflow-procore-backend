@@ -128,7 +128,7 @@ public static class ApiEndpoints
                 signerEmail,
                 signerFirstNames,
                 signerLastName,
-                customMessage
+                customMessage ?? ""
             );
 
             if (signiflowError != null)

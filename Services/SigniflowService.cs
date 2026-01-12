@@ -38,7 +38,7 @@ public class SigniflowService
     string signerEmail,
     string signerFirstNames,
     string signerLastName,
-    string? customMessage = null)
+    string customMessage)
     {
         try
         {
