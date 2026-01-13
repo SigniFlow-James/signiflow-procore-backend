@@ -307,7 +307,7 @@ public class ProcoreService
             var updatePayload = new
             {
                 status = status.ToProcoreValue(),
-                returned_date = completedDateTime //,
+                returned_date = completedDateTime.ToString() //,
                 // custom_fields = new
                 // {
                 //     signature_status = status,
@@ -316,7 +316,7 @@ public class ProcoreService
                 // }
                 // upload_ids = uploadIds
             };
-            Console.WriteLine("4");
+            Console.WriteLine($"4, {updatePayload}");
 
             var endpoint = $"companies/{companyId}/projects/{projectId}/commitment_contracts/{commitmentId}";
 
@@ -328,7 +328,8 @@ public class ProcoreService
                 token.AccessToken,
                 endpoint,
                 companyId.ToString(),
-                JsonContent.Create(updatePayload));
+                updatePayload
+                );
 
             Console.WriteLine("6");
 
