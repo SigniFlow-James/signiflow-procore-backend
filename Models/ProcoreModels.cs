@@ -8,8 +8,16 @@ public class ProcoreSession
     public string? AccessToken { get; set; }
     public string? RefreshToken { get; set; }
     public long? ExpiresAt { get; set; }
-    public long? CompanyId { get; set; }
-    public long? UserId { get; set; }
+    // public long? CompanyId { get; set; }
+    // public long? UserId { get; set; }
+}
+
+public class CommitmentMetadata
+{
+    public string CompanyId { get; set; } = "";
+    public string ProjectId { get; set; } = "";
+    public string CommitmentId { get; set; } = "";
+    public string IntegrationType { get; set; } = "";
 }
 
 public class CreateUploadRequest

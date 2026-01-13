@@ -285,7 +285,60 @@ public class ProcoreService
 
     }
 
+    public async Task UpdateCommitmentStatusAsync(
+        string commitmentId,
+        string projectId,
+        string companyId,
+        ProcoreEnums.WorkflowStatus status,
+        DateTime? completedDateTime //,
+        // string workflowUrl,
+        // string[]? uploadIds
+        )
+    {
+        try
+        {
+            var token = _oauthSession.Procore;
+            if (token?.AccessToken == null)
+            {
+                throw new InvalidOperationException("Procore token is null");
+            }
+
+            var updatePayload = new
+            {
+                status,
+                returned_date = completedDateTime //,
+                // custom_fields = new
+                // {
+                //     signature_status = status,
+                //     workflowUrl,
+                //     completion_date = status.Completed ? DateTime.UtcNow.ToString("o") : null
+                // }
+                // upload_ids = uploadIds
+            };
+
+            var endpoint = $"companies/{companyId}/projects/{projectId}/commitment_contracts/{commitmentId}";
+
+            var response = await _procoreClient.SendAsync(
+                HttpMethod.Patch,
+                "2.0",
+                token.AccessToken,
+                endpoint,
+                companyId.ToString(),
+                JsonContent.Create(updatePayload));
+
+            response.EnsureSuccessStatusCode();
+
+            Console.WriteLine("Updated Procore commitment {CommitmentId} status", commitmentId);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error updating Procore commitment {commitmentId}, {ex}");
+            throw;
+        }
+    }
 }
+
+
 
 // ============================================================
 // END FILE: Services/ProcoreService.cs

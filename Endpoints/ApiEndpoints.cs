@@ -52,7 +52,7 @@ public static class ApiEndpoints
             }
 
             // Extract signer info from form
-            
+
             if (!form.TryGetProperty("email", out var signerEmailProp) ||
                 !form.TryGetProperty("firstNames", out var signerFirstNamesProp) ||
                 !form.TryGetProperty("lastName", out var signerLastNameProp))
@@ -66,8 +66,8 @@ public static class ApiEndpoints
             var signerEmail = signerEmailProp.GetString();
             var signerFirstNames = signerFirstNamesProp.GetString();
             var signerLastName = signerLastNameProp.GetString();
-            var customMessage = form.TryGetProperty("customMessage", out var msgProp) 
-                ? msgProp.GetString() 
+            var customMessage = form.TryGetProperty("customMessage", out var msgProp)
+                ? msgProp.GetString()
                 : null;
 
             if (string.IsNullOrWhiteSpace(signerEmail) || string.IsNullOrWhiteSpace(signerFirstNames) || string.IsNullOrWhiteSpace(signerLastName))
@@ -91,7 +91,7 @@ public static class ApiEndpoints
             var companyId = companyIdProp.GetString();
             var projectId = projectIdProp.GetString();
             var commitmentId = commitmentIdProp.GetString();
-            
+
             if (companyId == null || projectId == null || commitmentId == null)
             {
                 Console.WriteLine("❌ Missing Procore context IDs");
@@ -119,11 +119,19 @@ public static class ApiEndpoints
             }
 
             Console.WriteLine("📤 Sending PDF to SigniFlow...");
-
+            
             // Send to SigniFlow
+            var metadata = new CommitmentMetadata
+            {
+                CompanyId = companyId,
+                ProjectId = projectId,
+                CommitmentId = commitmentId,
+                IntegrationType = "Procore"
+            };
             var documentName = $"Procore_Commitment_{commitmentId}";
             var (workflowResponse, signiflowError) = await signiflowService.CreateWorkflowAsync(
                 pdfBytes!,
+                metadata,
                 documentName,
                 signerEmail,
                 signerFirstNames,
@@ -140,6 +148,15 @@ public static class ApiEndpoints
 
             Console.WriteLine("✅ Workflow created successfully");
             Console.WriteLine($"Document ID: {workflowResponse!.DocIDField}");
+
+            // Update status on procore
+            await procoreService.UpdateCommitmentStatusAsync(
+                commitmentId,
+                projectId,
+                companyId,
+                ProcoreEnums.WorkflowStatus.AwaitingSignature,
+                null
+            );
 
             response.StatusCode = 200;
             await response.WriteAsJsonAsync(new

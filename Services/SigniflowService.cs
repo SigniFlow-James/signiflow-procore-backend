@@ -2,7 +2,7 @@
 // FILE: Services/SigniflowService.cs
 // ============================================================
 using System.Text.Json;
-using static Signiflow.APIClasses.Enums;
+using static Signiflow.APIClasses.SigniflowEnums;
 
 namespace Signiflow.APIClasses;
 
@@ -34,6 +34,7 @@ public class SigniflowService
     // ------------------------------------------------------------
     public async Task<(FullWorkflowResponse? response, string? error)> CreateWorkflowAsync(
     byte[] pdfBytes,
+    Procore.APIClasses.CommitmentMetadata metaData,
     string documentName,
     string signerEmail,
     string signerFirstNames,
@@ -71,6 +72,8 @@ public class SigniflowService
                 KeepContentSecurityField = false,
                 KeepCustomPropertiesField = false,
                 KeepXMPMetadataField = false,
+
+                AdditionalDataField = JsonSerializer.Serialize(metaData),
 
                 PortfolioInformationField = new PortfolioInfo
                 {

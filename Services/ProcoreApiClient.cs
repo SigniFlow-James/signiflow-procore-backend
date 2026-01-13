@@ -29,6 +29,7 @@ public class ProcoreApiClient
         
         _redirect = AppConfig.RedirectUri;
     }
+    
 
     // ------------------------------------------------------------
     // Aquire Procore tokens
@@ -147,6 +148,7 @@ public class ProcoreApiClient
     // ------------------------------------------------------------
     // Core POST helper
     // ------------------------------------------------------------
+
     public async Task<HttpResponseMessage> SendAsync(
         HttpMethod method,
         string targetVersion,

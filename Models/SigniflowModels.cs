@@ -1,6 +1,8 @@
 // ============================================================
 // FILE: Models/SigniflowModels.cs
 // ============================================================
+using System.Text.Json.Serialization;
+
 namespace Signiflow.APIClasses;
 
 public class SigniflowSession
@@ -108,6 +110,54 @@ public class WorkflowUserFieldInformation
     public int XOffsetField { get; set; }
     public string YCoordinateField { get; set; } = "";
     public int YOffsetField { get; set; }
+}
+
+public class SigniflowWebhookEvent
+{
+    [JsonPropertyName("EventType")]
+    public string? EventType { get; set; }
+
+    [JsonPropertyName("DocID")]
+    public int DocId { get; set; }
+
+    [JsonPropertyName("DocumentName")]
+    public string? DocumentName { get; set; }
+
+    [JsonPropertyName("Status")]
+    public string? Status { get; set; }
+
+    [JsonPropertyName("CompletedDate")]
+    public DateTime? CompletedDate { get; set; }
+
+    [JsonPropertyName("AdditionalData")] 
+    public string? AdditionalData { get; set; }
+
+    [JsonPropertyName("DocumentUrl")]
+    public string? DocumentUrl { get; set; }
+
+    [JsonPropertyName("PortfolioID")]
+    public int? PortfolioId { get; set; }
+
+    [JsonPropertyName("WorkflowUsers")]
+    public List<SigniflowWebhookUser>? WorkflowUsers { get; set; }
+}
+
+public class SigniflowWebhookUser
+{
+    [JsonPropertyName("EmailAddress")]
+    public string? EmailAddress { get; set; }
+
+    [JsonPropertyName("FullName")]
+    public string? FullName { get; set; }
+
+    [JsonPropertyName("Action")]
+    public string? Action { get; set; }
+
+    [JsonPropertyName("ActionDate")]
+    public DateTime? ActionDate { get; set; }
+
+    [JsonPropertyName("Status")]
+    public string? Status { get; set; }
 }
 
 // ============================================================
