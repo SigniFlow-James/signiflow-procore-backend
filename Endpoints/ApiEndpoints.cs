@@ -15,6 +15,7 @@ public static class ApiEndpoints
         {
             try
             {
+                Console.WriteLine("1");
                 // Update status on procore
                 await procoreService.UpdateCommitmentStatusAsync(
                     "112291",

@@ -295,6 +295,7 @@ public class ProcoreService
         // string[]? uploadIds
         )
     {
+        Console.WriteLine("2");
         try
         {
             var token = _oauthSession.Procore;
@@ -302,7 +303,7 @@ public class ProcoreService
             {
                 throw new InvalidOperationException("Procore token is null");
             }
-
+            Console.WriteLine("3");
             var updatePayload = new
             {
                 status.Value,
@@ -315,8 +316,11 @@ public class ProcoreService
                 // }
                 // upload_ids = uploadIds
             };
+            Console.WriteLine("4");
 
             var endpoint = $"companies/{companyId}/projects/{projectId}/commitment_contracts/{commitmentId}";
+
+            Console.WriteLine("5");
 
             var response = await _procoreClient.SendAsync(
                 HttpMethod.Patch,
@@ -325,6 +329,8 @@ public class ProcoreService
                 endpoint,
                 companyId.ToString(),
                 JsonContent.Create(updatePayload));
+
+            Console.WriteLine("6");
 
             response.EnsureSuccessStatusCode();
 
