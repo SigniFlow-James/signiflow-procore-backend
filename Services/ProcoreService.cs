@@ -307,7 +307,7 @@ public class ProcoreService
             var updatePayload = new
             {
                 status = status.ToProcoreValue(),
-                returned_date = completedDateTime.ToString() //,
+                // returned_date = completedDateTime.ToString() ?? "" //,
                 // custom_fields = new
                 // {
                 //     signature_status = status,
