@@ -305,7 +305,7 @@ public class ProcoreService
 
             var updatePayload = new
             {
-                status,
+                status.Value,
                 returned_date = completedDateTime //,
                 // custom_fields = new
                 // {

@@ -9,8 +9,29 @@ using Procore.APIClasses;
 
 public static class ApiEndpoints
 {
-    public static void MapApiEndpoints(this WebApplication app)
+    public static void MapApiEndpoints(this WebApplication app, ProcoreService procoreService)
     {
+        app.MapGet("/api/test", async () =>
+        {
+            try
+            {
+                // Update status on procore
+                await procoreService.UpdateCommitmentStatusAsync(
+                    "112291",
+                    "310481",
+                    "4279506",
+                    ProcoreEnums.WorkflowStatus.AwaitingSignature,
+                    null
+                );
+
+                Results.Ok("OK");
+            }
+            catch
+            {
+                Results.BadRequest("FAIL");
+            }
+        }
+        );
 
         // Send Procore PDF to SigniFlow
         app.MapPost("/api/send", async (
@@ -119,7 +140,7 @@ public static class ApiEndpoints
             }
 
             Console.WriteLine("📤 Sending PDF to SigniFlow...");
-            
+
             // Send to SigniFlow
             var metadata = new CommitmentMetadata
             {
