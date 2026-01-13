@@ -9,9 +9,9 @@ using Procore.APIClasses;
 
 public static class ApiEndpoints
 {
-    public static void MapApiEndpoints(this WebApplication app, ProcoreService procoreService)
+    public static void MapApiEndpoints(this WebApplication app)
     {
-        app.MapGet("/api/test", async () =>
+        app.MapGet("/api/test", async (ProcoreService procoreService) =>
         {
             try
             {
