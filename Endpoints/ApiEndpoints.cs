@@ -16,34 +16,15 @@ public static class ApiEndpoints
         {
             try
             {
-                var client = new HttpClient();
-                var request = new HttpRequestMessage
-                {
-                    Method = HttpMethod.Patch,
-                    RequestUri = new Uri("https://api.procore.com/rest/v2.0/companies/4279506/projects/310481/commitment_contracts/112291"),
-                    Content = new StringContent("{\"status\":\"Approved\"}")
-                    {
-                        Headers =
-                        {
-                            ContentType = new MediaTypeHeaderValue("application/json")
-                        }
-                    }
-                };
-                Console.WriteLine("1");
-
-                var response = await client.SendAsync(request);
-
-                Console.WriteLine(await response.Content.ReadAsStringAsync());
-
                 // Update status on procore
-                // await procoreService.UpdateCommitmentStatusAsync(
-                //     "112291",
-                //     "310481",
-                //     "4279506",
-                //     ProcoreEnums.WorkflowStatus.AwaitingSignature,
-                //     null
-                // );
-                response.EnsureSuccessStatusCode();
+                await procoreService.UpdateCommitmentStatusAsync(
+                    "112291",
+                    "310481",
+                    "4279506",
+                    new ProcoreEnums.WorkflowStatus().AwaitingSignature,
+                    null
+                );
+
                 Results.Ok("OK");
             }
             catch
@@ -195,7 +176,7 @@ public static class ApiEndpoints
                 commitmentId,
                 projectId,
                 companyId,
-                ProcoreEnums.WorkflowStatus.AwaitingSignature,
+                new ProcoreEnums.WorkflowStatus().AwaitingSignature,
                 null
             );
 

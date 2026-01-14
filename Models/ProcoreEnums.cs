@@ -19,14 +19,14 @@ public static class ProcoreEnums
     }
 
     // ✅ REAL enum (not a class)
-    public enum WorkflowStatus
+    public class WorkflowStatus
     {
-        Draft,
-        Pending,
-        AwaitingSignature,
-        Approved,
-        Terminated,
-        Void
+        public string Draft = "Draft";
+        public string Pending = "Pending";
+        public string AwaitingSignature = "Awaiting Signature";
+        public string Approved = "Approved";
+        public string Terminated = "Terminated";
+        public string Void = "Void";
     }
 
     public enum IDType
@@ -52,27 +52,6 @@ public static class ProcoreEnums
         AddressText = 11,
         CompanyNameText = 12
     }
-}
-
-public static class WorkflowStatusExtensions
-{
-    // Exact values Procore expects
-    public static string ToProcoreValue(this ProcoreEnums.WorkflowStatus status) =>
-        status switch
-        {
-            ProcoreEnums.WorkflowStatus.Draft => "Draft",
-            ProcoreEnums.WorkflowStatus.Pending => "Pending",
-            ProcoreEnums.WorkflowStatus.AwaitingSignature => "Awaiting Signature",
-            ProcoreEnums.WorkflowStatus.Approved => "Approved",
-            ProcoreEnums.WorkflowStatus.Terminated => "Terminated",
-            ProcoreEnums.WorkflowStatus.Void => "Void",
-            _ => throw new ArgumentOutOfRangeException(nameof(status))
-        };
-
-    public static bool IsCompleted(this ProcoreEnums.WorkflowStatus status) =>
-        status is ProcoreEnums.WorkflowStatus.Approved
-               or ProcoreEnums.WorkflowStatus.Terminated
-               or ProcoreEnums.WorkflowStatus.Void;
 }
 
 

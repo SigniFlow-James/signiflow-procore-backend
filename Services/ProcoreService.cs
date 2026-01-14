@@ -289,34 +289,60 @@ public class ProcoreService
         string commitmentId,
         string projectId,
         string companyId,
-        ProcoreEnums.WorkflowStatus status,
+        string statusValue,
         DateTime? completedDateTime //,
-        // string workflowUrl,
-        // string[]? uploadIds
+                                    // string workflowUrl,
+                                    // string[]? uploadIds
         )
     {
         Console.WriteLine("2");
         try
         {
-            var endpoint = $"companies/{companyId}/projects/{projectId}/commitment_contracts/{commitmentId}";
-            var token = _oauthSession.Procore;
-            if (token?.AccessToken == null)
+
+            var client = new HttpClient();
+            var request = new HttpRequestMessage
             {
-                throw new InvalidOperationException("Procore token is null");
-            }
-            Console.WriteLine("Grabbing existing commitment");
-            var response = await _procoreClient.SendAsync(
-                HttpMethod.Get,
-                "2.0",
-                token.AccessToken,
-                endpoint,
-                companyId.ToString(),
-                null
-                );
+                Method = HttpMethod.Patch,
+                RequestUri = new Uri($"https://api.procore.com/rest/v2.0/companies/{companyId}/projects/{projectId}/commitment_contracts/{commitmentId}"),
+                Content = new StringContent("{\"status\":\"statusValue\"}".Replace("statusValue", statusValue))
+                {
+                    Headers =
+                        {
+                            ContentType = new MediaTypeHeaderValue("application/json")
+                        }
+                }
+            };
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _oauthSession.Procore.AccessToken);
+            Console.WriteLine("1");
+
+            var response = await client.SendAsync(request);
+            
+            Console.WriteLine("2");
+            Console.WriteLine(await response.Content.ReadAsStringAsync());
+
             response.EnsureSuccessStatusCode();
-            var responseJson = await response.Content.ReadAsStringAsync();
-            var commitmentData = JsonSerializer.Deserialize<WorkOrderContractResponse>(responseJson);
-            Console.WriteLine(commitmentData?.Data);
+            Results.Ok("OK");
+
+
+            // var endpoint = $"companies/{companyId}/projects/{projectId}/commitment_contracts/{commitmentId}";
+            // var token = _oauthSession.Procore;
+            // if (token?.AccessToken == null)
+            // {
+            //     throw new InvalidOperationException("Procore token is null");
+            // }
+            // Console.WriteLine("Grabbing existing commitment");
+            // var response = await _procoreClient.SendAsync(
+            //     HttpMethod.Get,
+            //     "2.0",
+            //     token.AccessToken,
+            //     endpoint,
+            //     companyId.ToString(),
+            //     null
+            //     );
+            // response.EnsureSuccessStatusCode();
+            // var responseJson = await response.Content.ReadAsStringAsync();
+            // var commitmentData = JsonSerializer.Deserialize<WorkOrderContractResponse>(responseJson);
+            // Console.WriteLine(commitmentData?.Data);
 
             // var patchRequest = CommitmentContractMapper.ToPatchRequest(commitmentData);
 
@@ -324,7 +350,7 @@ public class ProcoreService
 
             // Console.WriteLine($"4, {patchRequest}");
 
-            
+
 
             // Console.WriteLine("5");
 
