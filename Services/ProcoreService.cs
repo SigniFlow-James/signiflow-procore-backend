@@ -298,31 +298,37 @@ public class ProcoreService
         Console.WriteLine("2");
         try
         {
+            var endpoint = $"companies/{companyId}/projects/{projectId}/commitment_contracts/{commitmentId}";
             var token = _oauthSession.Procore;
             if (token?.AccessToken == null)
             {
                 throw new InvalidOperationException("Procore token is null");
             }
-            Console.WriteLine("3");
-            var updatePayload = new
-            {
-                status = status.ToProcoreValue(),
-                // returned_date = completedDateTime.ToString() ?? "" //,
-                // custom_fields = new
-                // {
-                //     signature_status = status,
-                //     workflowUrl,
-                //     completion_date = status.Completed ? DateTime.UtcNow.ToString("o") : null
-                // }
-                // upload_ids = uploadIds
-            };
-            Console.WriteLine($"4, {updatePayload}");
+            Console.WriteLine("Grabbing existing commitment");
+            var response = await _procoreClient.SendAsync(
+                HttpMethod.Get,
+                "2.0",
+                token.AccessToken,
+                endpoint,
+                companyId.ToString(),
+                null
+                );
+            response.EnsureSuccessStatusCode();
+            var responseJson = await response.Content.ReadAsStringAsync();
+            var commitmentData = JsonSerializer.Deserialize<WorkOrderContractResponse>(responseJson);
+            Console.WriteLine(commitmentData?.Data);
 
-            var endpoint = $"companies/{companyId}/projects/{projectId}/commitment_contracts/{commitmentId}";
+            var patchRequest = CommitmentContractMapper.ToPatchRequest(commitmentData);
+
+            patchRequest.Status = ProcoreEnums.WorkflowStatus.Approved;
+
+            Console.WriteLine($"4, {patchRequest}");
+
+            
 
             Console.WriteLine("5");
 
-            var response = await _procoreClient.SendAsync(
+            response = await _procoreClient.SendAsync(
                 HttpMethod.Patch,
                 "2.0",
                 token.AccessToken,
@@ -335,7 +341,7 @@ public class ProcoreService
 
             response.EnsureSuccessStatusCode();
 
-            Console.WriteLine("Updated Procore commitment {CommitmentId} status", commitmentId);
+            Console.WriteLine($"Updated Procore commitment {commitmentId} status");
         }
         catch (Exception ex)
         {

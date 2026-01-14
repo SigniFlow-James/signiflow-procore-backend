@@ -29,7 +29,7 @@ public class ProcoreApiClient
         
         _redirect = AppConfig.RedirectUri;
     }
-    
+
 
     // ------------------------------------------------------------
     // Aquire Procore tokens
@@ -172,6 +172,7 @@ public class ProcoreApiClient
             var json = JsonSerializer.Serialize(body);
             request.Content = new StringContent(json, Encoding.UTF8, "application/json");
         }
+        Console.WriteLine($"📍 Posting to: {_http.BaseAddress}{endpoint}");
         var response = await _http.SendAsync(request);
         return response;
     }
