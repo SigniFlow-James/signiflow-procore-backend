@@ -20,7 +20,7 @@ public static class ApiEndpoints
                 var request = new HttpRequestMessage
                 {
                     Method = HttpMethod.Patch,
-                    RequestUri = new Uri("https://api.procore.com/rest/v2.0/companies/{company_id}/projects/{project_id}/commitment_contracts/{commitment_contract_id}"),
+                    RequestUri = new Uri("https://api.procore.com/rest/v2.0/companies/4279506/projects/310481/commitment_contracts/112291"),
                     Content = new StringContent("{\"status\":\"Approved\"}")
                     {
                         Headers =
@@ -31,13 +31,13 @@ public static class ApiEndpoints
                 };
                 Console.WriteLine("1");
                 // Update status on procore
-                await procoreService.UpdateCommitmentStatusAsync(
-                    "112291",
-                    "310481",
-                    "4279506",
-                    ProcoreEnums.WorkflowStatus.AwaitingSignature,
-                    null
-                );
+                // await procoreService.UpdateCommitmentStatusAsync(
+                //     "112291",
+                //     "310481",
+                //     "4279506",
+                //     ProcoreEnums.WorkflowStatus.AwaitingSignature,
+                //     null
+                // );
 
                 Results.Ok("OK");
             }
