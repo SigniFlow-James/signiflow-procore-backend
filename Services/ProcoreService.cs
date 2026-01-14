@@ -34,11 +34,6 @@ public class ProcoreService
                 $"companies/{companyId}/projects/{projectId}/commitment_contracts/{commitmentId}/pdf";
 
             // Start export (POST)
-            var postReq = new HttpRequestMessage(HttpMethod.Post, exportUrl);
-            postReq.Headers.Authorization =
-                new AuthenticationHeaderValue("Bearer", _oauthSession.Procore.AccessToken);
-            postReq.Headers.Add("Procore-Company-Id", companyId);
-
             await _procoreClient.SendAsync(
                 HttpMethod.Post,
                 "2.0",
@@ -295,28 +290,24 @@ public class ProcoreService
                                     // string[]? uploadIds
         )
     {
-        Console.WriteLine("2");
         try
         {
 
-            var client = new HttpClient();
-            var request = new HttpRequestMessage
+            var endpoint = $"{companyId}/projects/{projectId}/commitment_contracts/{commitmentId}";
+            var body = new
             {
-                Method = HttpMethod.Patch,
-                RequestUri = new Uri($"https://api.procore.com/rest/v2.0/companies/{companyId}/projects/{projectId}/commitment_contracts/{commitmentId}"),
-                Content = new StringContent("{\"status\":\"statusValue\"}".Replace("statusValue", statusValue))
-                {
-                    Headers =
-                        {
-                            ContentType = new MediaTypeHeaderValue("application/json")
-                        }
-                }
+                status = statusValue
             };
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _oauthSession.Procore.AccessToken);
             Console.WriteLine("1");
 
-            var response = await client.SendAsync(request);
-            
+            var response = await _procoreClient.SendAsync(
+                HttpMethod.Patch,
+                "2.0",
+                _oauthSession.Procore.AccessToken,
+                endpoint,
+                companyId,
+                body);
+
             Console.WriteLine("2");
             Console.WriteLine(await response.Content.ReadAsStringAsync());
 
