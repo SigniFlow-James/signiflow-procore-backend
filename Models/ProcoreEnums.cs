@@ -18,13 +18,13 @@ public static class ProcoreEnums
         Yes = 1
     }
 
-    // ✅ REAL enum (not a class)
     public class WorkflowStatus
     {
         public string Draft = "Draft";
-        public string Pending = "Pending";
-        public string AwaitingSignature = "Awaiting Signature";
+        public string AwaitingBids = "Out For Bid";
+        public string AwaitingSignature = "Out For Signature";
         public string Approved = "Approved";
+        public string Complete = "Complete";
         public string Terminated = "Terminated";
         public string Void = "Void";
     }
