@@ -293,7 +293,7 @@ public class ProcoreService
         try
         {
 
-            var endpoint = $"{companyId}/projects/{projectId}/commitment_contracts/{commitmentId}";
+            var endpoint = $"companies/{companyId}/projects/{projectId}/commitment_contracts/{commitmentId}";
             var body = new
             {
                 status = statusValue
@@ -306,7 +306,8 @@ public class ProcoreService
                 _oauthSession.Procore.AccessToken,
                 endpoint,
                 companyId,
-                body);
+                body
+                );
 
             Console.WriteLine("2");
             Console.WriteLine(await response.Content.ReadAsStringAsync());
