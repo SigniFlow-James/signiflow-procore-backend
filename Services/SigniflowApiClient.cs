@@ -81,6 +81,11 @@ public class SigniflowApiClient
         Console.WriteLine($"🔑 response: {responseJson}");
         return JsonSerializer.Deserialize<T>(responseJson, options)!;
     }
+
+    public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request)
+    {
+        return await _http.SendAsync(request);
+    }
 }
 
 // ------------------------------------------------------------

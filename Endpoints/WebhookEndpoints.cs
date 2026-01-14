@@ -8,10 +8,12 @@ using Signiflow.APIClasses;
 public class SigniflowWebhookController : ControllerBase
 {
     private readonly ProcoreService _procoreService;
+    private readonly SigniflowService _signiflowService;
 
-    public SigniflowWebhookController(ProcoreService procoreService)
+    public SigniflowWebhookController(ProcoreService procoreService, SigniflowService signiflowService)
     {
         _procoreService = procoreService;
+        _signiflowService = signiflowService;
     }
 
     [HttpPost("signiflow")]
@@ -23,7 +25,7 @@ public class SigniflowWebhookController : ControllerBase
             Console.WriteLine($"Full payload: {JsonSerializer.Serialize(webhookEvent)}");
 
             // Handle document completion
-            if (webhookEvent.EventType == "DocumentCompleted" || 
+            if (webhookEvent.EventType == "DocumentCompleted" ||
                 webhookEvent.Status == "Completed")
             {
                 await HandleDocumentCompletedAsync(webhookEvent);
@@ -44,31 +46,51 @@ public class SigniflowWebhookController : ControllerBase
         {
             Console.WriteLine($"Processing completed document: DocID={webhookEvent.DocId}");
 
-             // Parse the metadata from AdditionalData
+            // Parse the metadata from AdditionalData
             CommitmentMetadata? metadata = null;
             if (webhookEvent.AdditionalData != null)
             {
                 metadata = JsonSerializer.Deserialize<CommitmentMetadata>(webhookEvent.AdditionalData);
             }
-            
-            
-            if (metadata != null)
+            if (metadata == null)
             {
-                await _procoreService.UpdateCommitmentStatusAsync(
-                    metadata.CommitmentId,
-                    metadata.ProjectId,
-                    metadata.CompanyId,
-                    new ProcoreEnums.WorkflowStatus().AwaitingSignature,
-                    webhookEvent.CompletedDate //,
-                    // webhookEvent.DocumentUrl
-                );
-                Console.WriteLine($"Successfully updated Procore commitment {metadata.CommitmentId}");
+                Console.WriteLine("Could not get metadata");
+                return;
+            }
+
+            //download document from signiflow
+            byte[] pdf = [];
+
+            if (!string.IsNullOrWhiteSpace(webhookEvent.DocumentUrl))
+            {
+                pdf = await _signiflowService.DownloadAsync(webhookEvent.DocumentUrl);
             }
             else
             {
-                Console.WriteLine("Could not get metadata");
+                // fallback (older tenants only)
+                //pdf = await DownloadViaApi(@event.DocId);
             }
+
+
+            // Upload document to procore
+            var uploadUuid = await _procoreService.FullUploadContractAsync(metadata.ProjectId, webhookEvent.DocumentName, pdf);
+
             
+            var patch = new CommitmentContractPatch
+            {
+                Status = new ProcoreEnums.WorkflowStatus().Complete,
+                ContractDate = DateOnly.Parse(webhookEvent.CompletedDate.ToString()),
+                UploadIds = [uploadUuid]
+            };
+
+            await _procoreService.PatchCommitmentAsync(
+                    metadata.CommitmentId,
+                    metadata.ProjectId,
+                    metadata.CompanyId,
+                    patch
+                );
+            Console.WriteLine($"Successfully updated Procore commitment {metadata.CommitmentId}");
+
         }
         catch (Exception ex)
         {

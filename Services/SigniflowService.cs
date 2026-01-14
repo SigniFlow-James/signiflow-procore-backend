@@ -1,6 +1,7 @@
 // ============================================================
 // FILE: Services/SigniflowService.cs
 // ============================================================
+using System.Data.SqlTypes;
 using System.Text.Json;
 using static Signiflow.APIClasses.SigniflowEnums;
 
@@ -150,6 +151,14 @@ public class SigniflowService
             Console.WriteLine(ex);
             return (null, "Unexpected SigniFlow error");
         }
+    }
+
+    public async Task<byte[]> DownloadAsync(string documentUrl)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, documentUrl);
+        var response = await _client.SendAsync(request);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadAsByteArrayAsync();
     }
 }
 

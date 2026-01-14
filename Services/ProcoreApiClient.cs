@@ -30,6 +30,13 @@ public class ProcoreApiClient
         _redirect = AppConfig.RedirectUri;
     }
 
+    private static readonly JsonSerializerOptions PatchJsonOptions =
+    new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+    };
+
 
     // ------------------------------------------------------------
     // Aquire Procore tokens
@@ -155,7 +162,8 @@ public class ProcoreApiClient
         string? accessToken,
         string endpoint,
         string? companyId = null,
-        object? body = null
+        object? body = null,
+        bool usePatchOptions = false
         )
     {
         endpoint = $"rest/v{targetVersion}/{endpoint}";
@@ -169,7 +177,7 @@ public class ProcoreApiClient
         }
         if (body != null)
         {
-            var json = JsonSerializer.Serialize(body);
+            var json = JsonSerializer.Serialize(body, options: usePatchOptions? PatchJsonOptions : null);
             request.Content = new StringContent(json, Encoding.UTF8, "application/json");
         }
         Console.WriteLine($"📍 Posting to: {_http.BaseAddress}{endpoint}");

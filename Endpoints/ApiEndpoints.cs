@@ -16,13 +16,16 @@ public static class ApiEndpoints
         {
             try
             {
+                var patch = new CommitmentContractPatch
+                {
+                    Status = new ProcoreEnums.WorkflowStatus().AwaitingSignature,
+                };
                 // Update status on procore
-                await procoreService.UpdateCommitmentStatusAsync(
+                await procoreService.PatchCommitmentAsync(
                     "112291",
                     "310481",
                     "4279506",
-                    new ProcoreEnums.WorkflowStatus().AwaitingSignature,
-                    null
+                    patch
                 );
 
                 Results.Ok("OK");
@@ -172,12 +175,16 @@ public static class ApiEndpoints
             Console.WriteLine($"Document ID: {workflowResponse!.DocIDField}");
 
             // Update status on procore
-            await procoreService.UpdateCommitmentStatusAsync(
+            var patch = new CommitmentContractPatch
+            {
+                Status = new ProcoreEnums.WorkflowStatus().AwaitingSignature,
+            };
+
+            await procoreService.PatchCommitmentAsync(
                 commitmentId,
                 projectId,
                 companyId,
-                new ProcoreEnums.WorkflowStatus().AwaitingSignature,
-                null
+                patch
             );
 
             response.StatusCode = 200;

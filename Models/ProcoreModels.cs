@@ -50,179 +50,85 @@ public class DocumentPayload
 {
     public string name { get; set; } = default!;
     public string upload_uuid { get; set; } = default!;
-    public long parent_id { get; set; }
+    public string? parent_id { get; set; }
 }
 
 public class DocumentFolder
 {
-    public long id { get; set; }
+    public string id { get; set; } = default!;
     public string name { get; set; } = default!;
-    public long? parent_id { get; set; }
+    public string? parent_id { get; set; }
 }
 
-public sealed class CommitmentContractRequest
+public class CommitmentContractPatch
 {
-    [JsonPropertyName("number")]
-    public string? Number { get; init; }
+    public string? Number { get; set; }
+    public string? Status { get; set; }
+    public string? Title { get; set; }
+    public string? Description { get; set; }
+    public bool? Executed { get; set; }
 
-    [JsonPropertyName("status")]
-    public string? Status { get; init; }
+    public string? VendorId { get; set; }
+    public string? AssigneeId { get; set; }
 
-    [JsonPropertyName("title")]
-    public string? Title { get; init; }
+    public bool? SignatureRequired { get; set; }
+    public string? BillingScheduleOfValuesStatus { get; set; }
 
-    [JsonPropertyName("description")]
-    public string? Description { get; init; }
+    public string? Inclusions { get; set; }
+    public string? Exclusions { get; set; }
 
-    [JsonPropertyName("executed")]
-    public bool? Executed { get; init; }
+    public string? BillToAddress { get; set; }
+    public string? ShipToAddress { get; set; }
+    public string? ShipVia { get; set; }
+    public string? PaymentTerms { get; set; }
 
-    [JsonPropertyName("vendor_id")]
-    public int? VendorId { get; init; }
+    public decimal? RetainagePercent { get; set; }
+    public string? AccountingMethod { get; set; }
 
-    [JsonPropertyName("assignee_id")]
-    public int? AssigneeId { get; init; }
+    public bool? AllowComments { get; set; }
+    public bool? AllowMarkups { get; set; }
 
-    [JsonPropertyName("signature_required")]
-    public bool? SignatureRequired { get; init; }
+    public string? ChangeOrderLevelOfDetail { get; set; }
 
-    [JsonPropertyName("billing_schedule_of_values_status")]
-    public string? BillingScheduleOfValuesStatus { get; init; }
+    public bool? EnableSsov { get; set; }
+    public bool? AllowPaymentApplications { get; set; }
+    public bool? AllowPayments { get; set; }
 
-    [JsonPropertyName("inclusions")]
-    public string? Inclusions { get; init; }
+    public bool? DisplayMaterialsRetainage { get; set; }
+    public bool? DisplayWorkRetainage { get; set; }
+    public bool? ShowCostCodeOnPdf { get; set; }
 
-    [JsonPropertyName("exclusions")]
-    public string? Exclusions { get; init; }
+    public bool? SsrEnabled { get; set; }
+    public bool? Private { get; set; }
+    public bool? ShowLineItemsToNonAdmins { get; set; }
 
-    [JsonPropertyName("bill_to_address")]
-    public string? BillToAddress { get; init; }
+    public List<string>? BillRecipientIds { get; set; }
+    public List<string>? AccessorIds { get; set; }
 
-    [JsonPropertyName("ship_to_address")]
-    public string? ShipToAddress { get; init; }
+    public DateOnly? ActualCompletionDate { get; set; }
+    public DateOnly? ApprovalLetterDate { get; set; }
+    public DateOnly? ContractDate { get; set; }
+    public DateOnly? ContractEstimatedCompletionDate { get; set; }
+    public DateOnly? ContractStartDate { get; set; }
+    public DateOnly? DeliveryDate { get; set; }
+    public DateOnly? ExecutionDate { get; set; }
+    public DateOnly? IssuedOnDate { get; set; }
+    public DateOnly? LetterOfIntentDate { get; set; }
+    public DateOnly? ReturnedDate { get; set; }
+    public DateOnly? SignedContractReceivedDate { get; set; }
 
-    [JsonPropertyName("ship_via")]
-    public string? ShipVia { get; init; }
+    public decimal? CurrencyExchangeRate { get; set; }
+    public string? CurrencyIsoCode { get; set; }
 
-    [JsonPropertyName("payment_terms")]
-    public string? PaymentTerms { get; init; }
-
-    // Procore expects retainage as string
-    [JsonPropertyName("retainage_percent")]
-    public string? RetainagePercent { get; init; }
-
-    [JsonPropertyName("accounting_method")]
-    public string? AccountingMethod { get; init; }
-
-    [JsonPropertyName("allow_comments")]
-    public bool? AllowComments { get; init; }
-
-    [JsonPropertyName("allow_markups")]
-    public bool? AllowMarkups { get; init; }
-
-    [JsonPropertyName("change_order_level_of_detail")]
-    public string? ChangeOrderLevelOfDetail { get; init; }
-
-    [JsonPropertyName("enable_ssov")]
-    public bool? EnableSsov { get; init; }
-
-    [JsonPropertyName("allow_payment_applications")]
-    public bool? AllowPaymentApplications { get; init; }
-
-    [JsonPropertyName("allow_payments")]
-    public bool? AllowPayments { get; init; }
-
-    [JsonPropertyName("display_materials_retainage")]
-    public bool? DisplayMaterialsRetainage { get; init; }
-
-    [JsonPropertyName("display_work_retainage")]
-    public bool? DisplayWorkRetainage { get; init; }
-
-    [JsonPropertyName("show_cost_code_on_pdf")]
-    public bool? ShowCostCodeOnPdf { get; init; }
-
-    [JsonPropertyName("ssr_enabled")]
-    public bool? SsrEnabled { get; init; }
-
-    [JsonPropertyName("private")]
-    public bool? Private { get; init; }
-
-    [JsonPropertyName("show_line_items_to_non_admins")]
-    public bool? ShowLineItemsToNonAdmins { get; init; }
-
-    [JsonPropertyName("bill_recipient_ids")]
-    public List<int>? BillRecipientIds { get; init; }
-
-    [JsonPropertyName("accessor_ids")]
-    public List<int>? AccessorIds { get; init; }
-
-    // ---- Dates (date-only, not datetime)
-    [JsonPropertyName("actual_completion_date")]
-    public DateOnly? ActualCompletionDate { get; init; }
-
-    [JsonPropertyName("approval_letter_date")]
-    public DateOnly? ApprovalLetterDate { get; init; }
-
-    [JsonPropertyName("contract_date")]
-    public DateOnly? ContractDate { get; init; }
-
-    [JsonPropertyName("contract_estimated_completion_date")]
-    public DateOnly? ContractEstimatedCompletionDate { get; init; }
-
-    [JsonPropertyName("contract_start_date")]
-    public DateOnly? ContractStartDate { get; init; }
-
-    [JsonPropertyName("delivery_date")]
-    public DateOnly? DeliveryDate { get; init; }
-
-    [JsonPropertyName("execution_date")]
-    public DateOnly? ExecutionDate { get; init; }
-
-    [JsonPropertyName("issued_on_date")]
-    public DateOnly? IssuedOnDate { get; init; }
-
-    [JsonPropertyName("letter_of_intent_date")]
-    public DateOnly? LetterOfIntentDate { get; init; }
-
-    [JsonPropertyName("returned_date")]
-    public DateOnly? ReturnedDate { get; init; }
-
-    [JsonPropertyName("signed_contract_received_date")]
-    public DateOnly? SignedContractReceivedDate { get; init; }
-
-    // ---- Currency
-    [JsonPropertyName("currency_exchange_rate")]
-    public string? CurrencyExchangeRate { get; init; }
-
-    [JsonPropertyName("currency_iso_code")]
-    public string? CurrencyIsoCode { get; init; }
-
-    // ---- Attachments
-    [JsonPropertyName("change_event_attachment_ids")]
-    public List<int>? ChangeEventAttachmentIds { get; init; }
-
-    [JsonPropertyName("attachment_ids")]
-    public List<string>? AttachmentIds { get; init; }
-
-    [JsonPropertyName("drawing_revision_ids")]
-    public List<string>? DrawingRevisionIds { get; init; }
-
-    [JsonPropertyName("file_version_ids")]
-    public List<string>? FileVersionIds { get; init; }
-
-    [JsonPropertyName("form_ids")]
-    public List<string>? FormIds { get; init; }
-
-    [JsonPropertyName("image_ids")]
-    public List<string>? ImageIds { get; init; }
-
-    [JsonPropertyName("upload_ids")]
-    public List<string>? UploadIds { get; init; }
-
-    // ---- Custom fields (dynamic)
-    [JsonExtensionData]
-    public Dictionary<string, object>? CustomFields { get; init; }
+    public List<int>? ChangeEventAttachmentIds { get; set; }
+    public List<string>? AttachmentIds { get; set; }
+    public List<string>? DrawingRevisionIds { get; set; }
+    public List<string>? FileVersionIds { get; set; }
+    public List<string>? FormIds { get; set; }
+    public List<string>? ImageIds { get; set; }
+    public List<string>? UploadIds { get; set; }
 }
+
 
 
 // Root
@@ -232,7 +138,6 @@ public sealed class WorkOrderContractResponse
     public WorkOrderContractData Data { get; init; } = default!;
 }
 
-// Data payload
 public sealed class WorkOrderContractData
 {
     [JsonPropertyName("id")]

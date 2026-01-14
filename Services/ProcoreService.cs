@@ -5,6 +5,7 @@ using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 namespace Procore.APIClasses;
 
 public class ProcoreService
@@ -103,11 +104,11 @@ public class ProcoreService
     // Create upload in Procore
     // ------------------------------------------------------------
 
-    public async Task<CreateUploadResponse> CreateUploadAsync(
-    long projectId,
+    private async Task<CreateUploadResponse> CreateUploadAsync(
+    string projectId,
     string fileName,
-    string contentType,
-    byte[] fileBytes)
+    byte[] fileBytes,
+    string contentType = "application/pdf")
     {
         var payload = new CreateUploadRequest
         {
@@ -150,11 +151,11 @@ public class ProcoreService
     // Upload file to S3 using provided upload info
     // ------------------------------------------------------------
 
-    public async Task UploadFileToS3Async(
+    private async Task UploadFileToS3Async(
     CreateUploadResponse upload,
-    byte[] fileBytes,
     string fileName,
-    string contentType)
+    byte[] fileBytes,
+    string contentType = "application/pdf")
     {
         using var s3Client = new HttpClient();
 
@@ -181,8 +182,8 @@ public class ProcoreService
     // Get document folders in Procore project
     // ------------------------------------------------------------
 
-    public async Task<List<DocumentFolder>> GetDocumentFoldersAsync(
-    long projectId)
+    private async Task<List<DocumentFolder>> GetDocumentFoldersAsync(
+    string projectId)
     {
         var response = await _procoreClient.SendAsync(
             HttpMethod.Get,
@@ -197,15 +198,28 @@ public class ProcoreService
         return JsonSerializer.Deserialize<List<DocumentFolder>>(json)!;
     }
 
-    public long? FindFolderId(
+    private DocumentFolder? FindFolder(
     IEnumerable<DocumentFolder> folders,
-    string folderName,
-    long? parentId = null)
+    string? folderName = null,
+    string? parentId = null)
     {
-        return folders.FirstOrDefault(f =>
+        if (folderName == null && parentId == null)
+        {
+            //return root
+            return folders.FirstOrDefault(f => f.parent_id == parentId);
+        }
+        else if (parentId == null)
+        {
+            return folders.FirstOrDefault(f => f.name.Equals(folderName, StringComparison.OrdinalIgnoreCase));
+        }
+        else
+        {
+            return folders.FirstOrDefault(f =>
             f.name.Equals(folderName, StringComparison.OrdinalIgnoreCase) &&
             f.parent_id == parentId
-        )?.id;
+            );
+        }
+        
     }
 
 
@@ -213,10 +227,10 @@ public class ProcoreService
     // Create document folder in Procore
     // ------------------------------------------------------------
 
-    public async Task<DocumentFolder> CreateDocumentFolderAsync(
-    long projectId,
+    private async Task<DocumentFolder> CreateDocumentFolderAsync(
+    string projectId,
     string folderName,
-    long? parentFolderId)
+    string parentFolderId)
     {
         var payload = new
         {
@@ -251,9 +265,9 @@ public class ProcoreService
     // Create document record in Procore
     // ------------------------------------------------------------
 
-    public async Task CreateDocumentAsync(
-    long projectId,
-    long folderId,
+    private async Task CreateDocumentAsync(
+    string projectId,
+    string folderId,
     string fileName,
     string uploadUuid)
     {
@@ -280,86 +294,86 @@ public class ProcoreService
 
     }
 
-    public async Task UpdateCommitmentStatusAsync(
-        string commitmentId,
+
+    // ------------------------------------------------------------
+    // Full contract upload flow
+    // ------------------------------------------------------------
+
+    public async Task<string> FullUploadContractAsync(
         string projectId,
-        string companyId,
-        string statusValue,
-        DateTime? completedDateTime //,
-                                    // string workflowUrl,
-                                    // string[]? uploadIds
-        )
+        string fileName,
+        byte[] fileBytes
+    )
+    {
+        // find folder ID for association
+        var folders = await GetDocumentFoldersAsync(projectId);
+        var targetFolder = FindFolder(folders, "Signed_Contracts");
+        if (targetFolder is null)
+        {
+            // can't find folder, create new
+            var rootFolder = FindFolder(folders) ?? throw new FileNotFoundException("Cannot establish root folder in procore project.");
+            targetFolder = await CreateDocumentFolderAsync(projectId, "Signed_Contracts", rootFolder.id);
+        }
+
+        // Generate upload ID and url
+        var targetUpload = await CreateUploadAsync(projectId, fileName, fileBytes);
+
+        // upload document to url with ID
+        await UploadFileToS3Async(targetUpload, fileName, fileBytes);
+
+        // create document object and associate with upload ID
+        await CreateDocumentAsync(projectId, targetFolder.id, fileName, targetUpload.uuid);
+
+        return targetUpload.uuid;
+    }
+
+
+
+    // ------------------------------------------------------------
+    // Update commitment in Procore
+    // ------------------------------------------------------------
+
+    public async Task PatchCommitmentAsync(
+    string commitmentId,
+    string projectId,
+    string companyId,
+    CommitmentContractPatch patch)
+    {
+        await HandleCommitmentRequestAsync(commitmentId, projectId, companyId, HttpMethod.Patch, patch, true);
+    }
+
+    // public async Task GetCommitmentAsync(
+    // string commitmentId,
+    // string projectId,
+    // string companyId)
+    // {
+    //     return await HandleCommitmentRequestAsync(commitmentId, projectId, companyId, HttpMethod.Get, null, false);
+    // }
+
+    private async Task HandleCommitmentRequestAsync(
+    string commitmentId,
+    string projectId,
+    string companyId,
+    HttpMethod method,
+    CommitmentContractPatch? patch,
+    bool useJsonOptions)
     {
         try
         {
-
             var endpoint = $"companies/{companyId}/projects/{projectId}/commitment_contracts/{commitmentId}";
-            var body = new
-            {
-                status = statusValue
-            };
-            Console.WriteLine("1");
-
             var response = await _procoreClient.SendAsync(
-                HttpMethod.Patch,
+                method,
                 "2.0",
                 _oauthSession.Procore.AccessToken,
                 endpoint,
                 companyId,
-                body
+                patch,
+                useJsonOptions
                 );
 
-            Console.WriteLine("2");
             Console.WriteLine(await response.Content.ReadAsStringAsync());
-
             response.EnsureSuccessStatusCode();
-            Results.Ok("OK");
 
-
-            // var endpoint = $"companies/{companyId}/projects/{projectId}/commitment_contracts/{commitmentId}";
-            // var token = _oauthSession.Procore;
-            // if (token?.AccessToken == null)
-            // {
-            //     throw new InvalidOperationException("Procore token is null");
-            // }
-            // Console.WriteLine("Grabbing existing commitment");
-            // var response = await _procoreClient.SendAsync(
-            //     HttpMethod.Get,
-            //     "2.0",
-            //     token.AccessToken,
-            //     endpoint,
-            //     companyId.ToString(),
-            //     null
-            //     );
-            // response.EnsureSuccessStatusCode();
-            // var responseJson = await response.Content.ReadAsStringAsync();
-            // var commitmentData = JsonSerializer.Deserialize<WorkOrderContractResponse>(responseJson);
-            // Console.WriteLine(commitmentData?.Data);
-
-            // var patchRequest = CommitmentContractMapper.ToPatchRequest(commitmentData);
-
-            // patchRequest.Status = ProcoreEnums.WorkflowStatus.Approved;
-
-            // Console.WriteLine($"4, {patchRequest}");
-
-
-
-            // Console.WriteLine("5");
-
-            // response = await _procoreClient.SendAsync(
-            //     HttpMethod.Patch,
-            //     "2.0",
-            //     token.AccessToken,
-            //     endpoint,
-            //     companyId.ToString(),
-            //     updatePayload
-            //     );
-
-            // Console.WriteLine("6");
-
-            // response.EnsureSuccessStatusCode();
-
-            // Console.WriteLine($"Updated Procore commitment {commitmentId} status");
         }
         catch (Exception ex)
         {

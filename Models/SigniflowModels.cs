@@ -115,19 +115,19 @@ public class WorkflowUserFieldInformation
 public class SigniflowWebhookEvent
 {
     [JsonPropertyName("EventType")]
-    public string? EventType { get; set; }
+    public string EventType { get; set; } = default!;
 
     [JsonPropertyName("DocID")]
     public int DocId { get; set; }
 
     [JsonPropertyName("DocumentName")]
-    public string? DocumentName { get; set; }
+    public string DocumentName { get; set; } = default!;
 
     [JsonPropertyName("Status")]
-    public string? Status { get; set; }
+    public string Status { get; set; } = default!;
 
     [JsonPropertyName("CompletedDate")]
-    public DateTime? CompletedDate { get; set; }
+    public DateTime CompletedDate { get; set; }
 
     [JsonPropertyName("AdditionalData")] 
     public string? AdditionalData { get; set; }
@@ -136,7 +136,7 @@ public class SigniflowWebhookEvent
     public string? DocumentUrl { get; set; }
 
     [JsonPropertyName("PortfolioID")]
-    public int? PortfolioId { get; set; }
+    public int PortfolioId { get; set; }
 
     [JsonPropertyName("WorkflowUsers")]
     public List<SigniflowWebhookUser>? WorkflowUsers { get; set; }
@@ -154,7 +154,7 @@ public class SigniflowWebhookUser
     public string? Action { get; set; }
 
     [JsonPropertyName("ActionDate")]
-    public DateTime? ActionDate { get; set; }
+    public DateTime ActionDate { get; set; }
 
     [JsonPropertyName("Status")]
     public string? Status { get; set; }
