@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Signiflow.APIClasses;
 using Procore.APIClasses;
+using System.Net.Http.Headers;
 
 public static class ApiEndpoints
 {
@@ -15,6 +16,19 @@ public static class ApiEndpoints
         {
             try
             {
+                var client = new HttpClient();
+                var request = new HttpRequestMessage
+                {
+                    Method = HttpMethod.Patch,
+                    RequestUri = new Uri("https://api.procore.com/rest/v2.0/companies/{company_id}/projects/{project_id}/commitment_contracts/{commitment_contract_id}"),
+                    Content = new StringContent("{\"status\":\"Approved\"}")
+                    {
+                        Headers =
+                        {
+                            ContentType = new MediaTypeHeaderValue("application/json")
+                        }
+                    }
+                };
                 Console.WriteLine("1");
                 // Update status on procore
                 await procoreService.UpdateCommitmentStatusAsync(

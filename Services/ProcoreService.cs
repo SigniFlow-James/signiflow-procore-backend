@@ -318,30 +318,30 @@ public class ProcoreService
             var commitmentData = JsonSerializer.Deserialize<WorkOrderContractResponse>(responseJson);
             Console.WriteLine(commitmentData?.Data);
 
-            var patchRequest = CommitmentContractMapper.ToPatchRequest(commitmentData);
+            // var patchRequest = CommitmentContractMapper.ToPatchRequest(commitmentData);
 
-            patchRequest.Status = ProcoreEnums.WorkflowStatus.Approved;
+            // patchRequest.Status = ProcoreEnums.WorkflowStatus.Approved;
 
-            Console.WriteLine($"4, {patchRequest}");
+            // Console.WriteLine($"4, {patchRequest}");
 
             
 
-            Console.WriteLine("5");
+            // Console.WriteLine("5");
 
-            response = await _procoreClient.SendAsync(
-                HttpMethod.Patch,
-                "2.0",
-                token.AccessToken,
-                endpoint,
-                companyId.ToString(),
-                updatePayload
-                );
+            // response = await _procoreClient.SendAsync(
+            //     HttpMethod.Patch,
+            //     "2.0",
+            //     token.AccessToken,
+            //     endpoint,
+            //     companyId.ToString(),
+            //     updatePayload
+            //     );
 
-            Console.WriteLine("6");
+            // Console.WriteLine("6");
 
-            response.EnsureSuccessStatusCode();
+            // response.EnsureSuccessStatusCode();
 
-            Console.WriteLine($"Updated Procore commitment {commitmentId} status");
+            // Console.WriteLine($"Updated Procore commitment {commitmentId} status");
         }
         catch (Exception ex)
         {
