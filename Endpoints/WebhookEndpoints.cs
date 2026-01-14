@@ -58,7 +58,7 @@ public class SigniflowWebhookController : ControllerBase
                     metadata.CommitmentId,
                     metadata.ProjectId,
                     metadata.CompanyId,
-                    ProcoreEnums.WorkflowStatus.Pending,
+                    new ProcoreEnums.WorkflowStatus().Pending,
                     webhookEvent.CompletedDate //,
                     // webhookEvent.DocumentUrl
                 );
