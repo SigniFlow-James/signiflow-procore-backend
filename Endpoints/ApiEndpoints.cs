@@ -30,6 +30,11 @@ public static class ApiEndpoints
                     }
                 };
                 Console.WriteLine("1");
+
+                var response = await client.SendAsync(request);
+
+                Console.WriteLine(await response.Content.ReadAsStringAsync());
+
                 // Update status on procore
                 // await procoreService.UpdateCommitmentStatusAsync(
                 //     "112291",
@@ -38,7 +43,7 @@ public static class ApiEndpoints
                 //     ProcoreEnums.WorkflowStatus.AwaitingSignature,
                 //     null
                 // );
-
+                response.EnsureSuccessStatusCode();
                 Results.Ok("OK");
             }
             catch
