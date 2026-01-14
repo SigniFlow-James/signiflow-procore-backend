@@ -158,7 +158,7 @@ public class ProcoreApiClient
         object? body = null
         )
     {
-        endpoint = $"{_http.BaseAddress}rest/v{targetVersion}/{endpoint}";
+        endpoint = $"rest/v{targetVersion}/{endpoint}";
         // Start export
         var request = new HttpRequestMessage(method, endpoint);
         request.Headers.Authorization =
