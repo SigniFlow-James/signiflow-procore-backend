@@ -345,10 +345,14 @@ public class ProcoreService
         // }
 
         // Generate upload ID and url
+        Console.WriteLine("creating placeholder object");
         var targetUpload = await CreateUploadAsync(projectId, fileName, fileBytes);
+        Console.WriteLine($"Placeholder created: {targetUpload}");
+        Console.WriteLine("Attempting post to AWS");
 
         // upload document to url with ID
         await UploadFileToS3Async(targetUpload, fileName, fileBytes);
+        Console.WriteLine("Post success");
 
         // create document object and associate with upload ID
         // await CreateDocumentAsync(projectId, targetFolder.Id, fileName, targetUpload.uuid);
