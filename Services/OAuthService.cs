@@ -45,18 +45,20 @@ public class AuthService
 
     public async Task<string?> CheckRefreshAuthAsync()
     {
-        var procoreError = null as string;
-        var signiflowError = null as string;
+        string? procoreError = null;
+        Console.WriteLine($"1 {procoreError?.GetType()}");
+        string? signiflowError = null;
         if (IsProcoreAuthenticated())
         {
             (_, procoreError) = await RefreshProcoreTokenAsync();
         }
+        Console.WriteLine($"4 {procoreError?.GetType()}");
         if (IsSigniflowAuthenticated())
         {
             (_, signiflowError) = await SigniflowLoginAsync();
         }
-        var error = procoreError ?? $"Procore Auth Error: {procoreError}, " + signiflowError ?? $"Signiflow Auth Error: {signiflowError}";
-
+        var error = procoreError ?? $"Procore Auth Error: {procoreError} " + signiflowError ?? $"Signiflow Auth Error: {signiflowError}";
+        Console.WriteLine($"{procoreError?.GetType()}");
         if (error != null) { Console.WriteLine(error); }
         return error;
     }
@@ -113,6 +115,7 @@ public class AuthService
             return (false, "No refresh token available");
         }
         var (token, error) = await _procoreClient.RefreshProcoreTokenAsync(_oauthSession.Procore.RefreshToken);
+        Console.WriteLine($"3 {error?.GetType()}");
         if (token == null)
         {
             return (false, error);
