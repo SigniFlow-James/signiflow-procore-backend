@@ -147,7 +147,7 @@ public class ProcoreService
             payload
         );
 
-        response.EnsureSuccessStatusCode();
+        // response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<CreateUploadResponse>()
                ?? throw new InvalidOperationException("Upload creation failed");
     }
@@ -178,7 +178,7 @@ public class ProcoreService
         fileContent.Headers.ContentType =
             new MediaTypeHeaderValue(contentType);
         form.Add(fileContent, "file", fileName);
-
+        Console.WriteLine($"Posting to {upload.url}");
         var response = await s3Client.PostAsync(upload.url, form);
         response.EnsureSuccessStatusCode();
     }
@@ -348,9 +348,9 @@ public class ProcoreService
         Console.WriteLine("creating placeholder object");
         var targetUpload = await CreateUploadAsync(projectId, fileName, fileBytes);
         Console.WriteLine($"Placeholder created: {targetUpload}");
-        Console.WriteLine("Attempting post to AWS");
-
         // upload document to url with ID
+
+        Console.WriteLine("Attempting post to AWS");
         await UploadFileToS3Async(targetUpload, fileName, fileBytes);
         Console.WriteLine("Post success");
 
