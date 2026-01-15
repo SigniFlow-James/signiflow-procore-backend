@@ -124,7 +124,7 @@ public class SigniflowWebhookProcessor
             // Associate upload to commitment
             var patch = new CommitmentContractPatch
             {
-                Status = new ProcoreEnums.WorkflowStatus().Complete,
+                Status = new ProcoreEnums.WorkflowStatus().Approved,
                 ContractDate = DateOnly.FromDateTime(webhookEvent.CompletedDate),
                 UploadIds = [uploadUuid]
             };

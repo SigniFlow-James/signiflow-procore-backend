@@ -277,7 +277,7 @@ public class ProcoreService
             HttpMethod.Post,
             "1.0",
             _oauthSession.Procore.AccessToken,
-            $"projects/{projectId}/document_folders",
+            $"folders?project_id={projectId}",
             null,
             content
         );
@@ -334,14 +334,15 @@ public class ProcoreService
     )
     {
         // find folder ID for association
-        var rootFolder = await GetDocumentFoldersAsync(projectId);
-        var targetFolder = FindFolder(rootFolder, "Signed_Contracts");
-        if (targetFolder is null)
-        {
-            // can't find folder, create new
-            // var rootFolder = FindFolder(folder) ?? throw new FileNotFoundException("Cannot establish root folder in procore project.");
-            targetFolder = await CreateDocumentFolderAsync(projectId, "Signed_Contracts"); //, rootFolder.Id);
-        }
+        // Console.WriteLine("Finding folder");
+        // var rootFolder = await GetDocumentFoldersAsync(projectId);
+        // var targetFolder = FindFolder(rootFolder, "Signed_Contracts");
+        // if (targetFolder is null)
+        // {
+        //     // can't find folder, create new
+        //     // var rootFolder = FindFolder(folder) ?? throw new FileNotFoundException("Cannot establish root folder in procore project.");
+        //     targetFolder = await CreateDocumentFolderAsync(projectId, "Signed_Contracts"); //, rootFolder.Id);
+        // }
 
         // Generate upload ID and url
         var targetUpload = await CreateUploadAsync(projectId, fileName, fileBytes);
