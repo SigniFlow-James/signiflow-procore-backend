@@ -42,18 +42,22 @@ public class SigniflowWebhookWorker : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        Console.WriteLine("Background listener is live");
         await foreach (var evt in _queue.DequeueAsync(stoppingToken))
         {
             try
             {
+                Console.WriteLine($"Executing item in listener: {evt}");
                 using var scope = _serviceProvider.CreateScope();
                 var processor = scope.ServiceProvider
                     .GetRequiredService<SigniflowWebhookProcessor>();
                 if (evt.EventType == "DocumentCompleted" || evt.Status == "Completed")
                 {
+                    Console.WriteLine("Document completed");
                     await _authService.CheckRefreshAuthAsync();
                     await processor.ProcessDocumentCompletedAsync(evt);
                 }
+                Console.WriteLine("Execution complete");
             }
             catch (Exception ex)
             {

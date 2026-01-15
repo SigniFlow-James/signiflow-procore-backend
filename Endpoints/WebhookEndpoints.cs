@@ -39,8 +39,8 @@ public static class WebhookEndpoints
 
                 Console.WriteLine($"Received SigniFlow webhook: {webhookEvent.EventType}");
                 Console.WriteLine($"Full form data: {JsonSerializer.Serialize(form.ToDictionary(k => k.Key, k => k.Value.ToString()))}");
-                
                 await queue.EnqueueAsync(webhookEvent);
+                Console.WriteLine("Added to queue");
                 return Results.Ok(new { status = "received" });
             }
             catch (Exception ex)
