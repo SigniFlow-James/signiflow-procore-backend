@@ -31,7 +31,7 @@ public class SigniflowWebhookController : ControllerBase
         try
         {
             Console.WriteLine($"Received SigniFlow webhook: {webhookEvent.EventType}");
-
+            
             await _queue.EnqueueAsync(webhookEvent);
 
             return Ok(new { status = "received" });
@@ -79,6 +79,8 @@ public class SigniflowWebhookController : ControllerBase
             }
 
             Console.WriteLine($"Processing completed document: DocID={webhookEvent.DocId}");
+
+            
 
             // Parse the metadata from AdditionalData
             CommitmentMetadata? metadata = null;

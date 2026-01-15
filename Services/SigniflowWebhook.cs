@@ -27,13 +27,16 @@ public class SigniflowWebhookWorker : BackgroundService
 {
     private readonly ISigniflowWebhookQueue _queue;
     private readonly IServiceProvider _serviceProvider;
+    private readonly AuthService _authService;
 
     public SigniflowWebhookWorker(
         ISigniflowWebhookQueue queue,
-        IServiceProvider serviceProvider)
+        IServiceProvider serviceProvider,
+        AuthService authService)
     {
         _queue = queue;
         _serviceProvider = serviceProvider;
+        _authService = authService;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -50,6 +53,9 @@ public class SigniflowWebhookWorker : BackgroundService
                 if (evt.EventType == "DocumentCompleted" ||
                     evt.Status == "Completed")
                 {
+                    // Refresh login if needed
+                    await _authService.CheckRefreshAuthAsync();
+                    // Fire event
                     await controller.ProcessDocumentCompletedAsync(evt);
                 }
 

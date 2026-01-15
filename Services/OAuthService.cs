@@ -43,12 +43,29 @@ public class AuthService
                DateTimeOffset.UtcNow < _oauthSession.Signiflow.TokenField.TokenExpiryField;
     }
 
+    public async Task<string?> CheckRefreshAuthAsync()
+    {
+        var procoreError = null as string;
+        var signiflowError = null as string;
+        if (IsProcoreAuthenticated())
+        {
+            (_, procoreError) = await RefreshProcoreTokenAsync();
+        }
+        if (IsSigniflowAuthenticated())
+        {
+            (_, signiflowError) = await SigniflowLoginAsync();
+        }
+        var error = procoreError ?? $"Procore Auth Error: {procoreError}, " + signiflowError ?? $"Signiflow Auth Error: {signiflowError}";
+
+        if (error != null) { Console.WriteLine(error); }
+        return error;
+    }
 
     // ------------------------------------------------------------
     // Async Check authentication
     // ------------------------------------------------------------
 
-    public async Task<bool> CheckAuthAsync(HttpResponse response)
+    public async Task<bool> CheckAuthResponseAsync(HttpResponse response)
     {
         if (IsProcoreAuthenticated() == false)
         {

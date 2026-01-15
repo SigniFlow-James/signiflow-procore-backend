@@ -2,7 +2,6 @@
 // FILE: Services/ProcoreApiClient.cs
 // ============================================================
 using Microsoft.AspNetCore.Http;
-using Procore.APIClasses;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;

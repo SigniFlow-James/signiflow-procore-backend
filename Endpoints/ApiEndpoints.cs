@@ -47,7 +47,7 @@ public static class ApiEndpoints
         ) =>
         {
             // Auth guard
-            if (!await authService.CheckAuthAsync(response))
+            if (!await authService.CheckAuthResponseAsync(response))
             {
                 response.StatusCode = 401;
                 await response.WriteAsJsonAsync(new { error = "Authentication failed" });

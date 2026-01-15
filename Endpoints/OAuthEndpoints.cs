@@ -133,26 +133,13 @@ public static class OAuthEndpoints
         });
 
         // Refresh token
-        _ = app.MapPost("/api/oauth/refresh", async (
+        app.MapPost("/api/oauth/refresh", async (
             HttpResponse response,
             AuthService authService,
             OAuthSession oauthSession
         ) =>
         {
-            var procoreRefreshed = false;
-            var procoreExpiryDateTime = null as DateTime?;
-            var signiflowRefreshed = false;
-            var procoreError = null as string;
-            var signiflowError = null as string;
-            if (!authService.IsProcoreAuthenticated())
-            {
-                (procoreRefreshed, procoreError) = await authService.RefreshProcoreTokenAsync();
-            }
-            if (!authService.IsSigniflowAuthenticated())
-            {
-                (signiflowRefreshed, signiflowError) = await authService.SigniflowLoginAsync();
-            }
-            var error = procoreError ?? $"Procore Error: {procoreError}, " + signiflowError ?? $"Signiflow Error: {signiflowError}";
+            var error = await authService.CheckRefreshAuthAsync();
             response.StatusCode = 200;
             await response.WriteAsJsonAsync(GenerateOAuthFullInfo(
                 authService,
