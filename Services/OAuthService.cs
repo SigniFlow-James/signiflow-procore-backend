@@ -62,7 +62,7 @@ public class AuthService
         {
             error = procoreError ?? $"Procore Auth Error: {procoreError} " + signiflowError ?? $"Signiflow Auth Error: {signiflowError}";
         }
-        Console.WriteLine($"{(procoreError != null ? procoreError.GetType() : "error is null")}");
+        Console.WriteLine($"{(error != null ? error.GetType() : "error is null")}");
         if (error != null) { Console.WriteLine(error); }
         return error;
     }

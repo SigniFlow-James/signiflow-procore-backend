@@ -53,7 +53,7 @@ public class SigniflowWebhookWorker : BackgroundService
                 using var scope = _serviceProvider.CreateScope();
                 var processor = scope.ServiceProvider
                     .GetRequiredService<SigniflowWebhookProcessor>();
-                if (evt.EventType == "DocumentCompleted" || evt.Status == "Completed")
+                if (evt.EventType == "Document Completed" || evt.Status == "Completed")
                 {
                     Console.WriteLine("Document completed");
                     await _authService.CheckRefreshAuthAsync();
@@ -112,8 +112,9 @@ public class SigniflowWebhookProcessor
             }
             pdf = Convert.FromBase64String(document.DocField);
 
+            string docName = webhookEvent.DocumentName.Length > 0 ? $"{webhookEvent.DocumentName} Signed" : $"Signed Commitment: {metadata.CommitmentId}";
             // Upload document to procore
-            var uploadUuid = await _procoreService.FullUploadDocumentAsync(metadata.ProjectId, webhookEvent.DocumentName, pdf);
+            var uploadUuid = await _procoreService.FullUploadDocumentAsync(metadata.ProjectId, docName, pdf);
 
             if (string.IsNullOrWhiteSpace(uploadUuid))
             {
