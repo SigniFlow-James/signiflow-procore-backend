@@ -31,7 +31,7 @@ public class SigniflowWebhookController : ControllerBase
         try
         {
             Console.WriteLine($"Received SigniFlow webhook: {webhookEvent.EventType}");
-            
+
             await _queue.EnqueueAsync(webhookEvent);
 
             return Ok(new { status = "received" });
@@ -50,14 +50,8 @@ public class SigniflowWebhookController : ControllerBase
             Console.WriteLine($"Received SigniFlow webhook: {webhookEvent.EventType}");
             Console.WriteLine($"Full payload: {JsonSerializer.Serialize(webhookEvent)}");
 
-            Task? eventTask = null;
-
-            // Handle document completion
-            if (webhookEvent.EventType == "DocumentCompleted" ||
-                webhookEvent.Status == "Completed")
-            {
-                eventTask = HandleDocumentCompletedAsync(webhookEvent);
-            }
+            Task eventTask = HandleDocumentCompletedAsync(webhookEvent);
+            eventTask.Start();
 
             return Ok(new { status = "received" });
         }
@@ -80,20 +74,16 @@ public class SigniflowWebhookController : ControllerBase
 
             Console.WriteLine($"Processing completed document: DocID={webhookEvent.DocId}");
 
-            
+
 
             // Parse the metadata from AdditionalData
-            CommitmentMetadata? metadata = null;
-            if (webhookEvent.AdditionalData != null)
-            {
-                Console.WriteLine($"Got additional Data: {webhookEvent.AdditionalData}");
-                metadata = JsonSerializer.Deserialize<CommitmentMetadata>(webhookEvent.AdditionalData);
-            }
+            var metadata = GetMetadata(webhookEvent);
             if (metadata == null)
             {
-                Console.WriteLine("Could not get metadata");
+                Console.WriteLine($"Could not get metadata");
                 return;
             }
+
 
             //download document from signiflow
             byte[] pdf = [];
@@ -109,6 +99,11 @@ public class SigniflowWebhookController : ControllerBase
             // Upload document to procore
             var uploadUuid = await _procoreService.FullUploadDocumentAsync(metadata.ProjectId, webhookEvent.DocumentName, pdf);
 
+            if (string.IsNullOrWhiteSpace(uploadUuid))
+            {
+                throw new NullReferenceException("Could not get upload uuid");
+            }
+            
             // Associate upload to commitment
             var patch = new CommitmentContractPatch
             {
@@ -128,9 +123,52 @@ public class SigniflowWebhookController : ControllerBase
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error handling completed document: {ex}");
-            throw;
+            try
+            {
+                var metadata = GetMetadata(webhookEvent);
+
+                if (metadata == null)
+                {
+                    Console.WriteLine($"Metadata missing, with errors: {ex}");
+                    return;
+                }
+                var patch = new CommitmentContractPatch
+                {
+                    Status = new ProcoreEnums.WorkflowStatus().Complete,
+                    ContractDate = DateOnly.Parse(webhookEvent.CompletedDate.ToString()),
+                };
+
+                await _procoreService.PatchCommitmentAsync(
+                        metadata.CommitmentId,
+                        metadata.ProjectId,
+                        metadata.CompanyId,
+                        patch
+                    );
+                Console.WriteLine($"Updated Procore commitment {metadata.CommitmentId} with errors: {ex}");
+            }
+            catch (Exception nestedEx)
+            {
+                Console.WriteLine($"Error handling completed document: {ex}");
+                Console.WriteLine($"During handling of above, error: {nestedEx}");
+                throw;
+            }
         }
+    }
+
+    private CommitmentMetadata? GetMetadata(SigniflowWebhookEvent webhookEvent) 
+    {
+        CommitmentMetadata? metadata = null;
+        if (webhookEvent.AdditionalData != null)
+        {
+            Console.WriteLine($"Got additional Data: {webhookEvent.AdditionalData}");
+            metadata = JsonSerializer.Deserialize<CommitmentMetadata>(webhookEvent.AdditionalData);
+        }
+        if (metadata == null)
+        {
+            Console.WriteLine("Could not get metadata");
+            return null;
+        }
+        return metadata;
     }
 }
 
