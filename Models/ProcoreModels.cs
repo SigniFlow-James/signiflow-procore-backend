@@ -10,8 +10,6 @@ public class ProcoreSession
     public string? AccessToken { get; set; }
     public string? RefreshToken { get; set; }
     public long? ExpiresAt { get; set; }
-    // public long? CompanyId { get; set; }
-    // public long? UserId { get; set; }
 }
 
 public class CommitmentMetadata
@@ -46,19 +44,224 @@ public class CreateUploadResponse
     public Dictionary<string, string> fields { get; set; } = new();
 }
 
+
 public class DocumentPayload
 {
-    public string name { get; set; } = default!;
-    public string upload_uuid { get; set; } = default!;
-    public string? parent_id { get; set; }
+    [JsonPropertyName("parent_id")]
+    public long ParentId { get; set; }
+
+    [JsonPropertyName("name")]
+    public string Name { get; set; } = string.Empty;
+
+    [JsonPropertyName("is_tracked")]
+    public bool IsTracked { get; set; }
+
+    [JsonPropertyName("explicit_permissions")]
+    public bool ExplicitPermissions { get; set; }
+
+    [JsonPropertyName("description")]
+    public string Description { get; set; } = string.Empty;
+
+    [JsonPropertyName("unique_name")]
+    public bool UniqueName { get; set; }
+
+    [JsonPropertyName("upload_uuid")]
+    public string UploadUuid { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Dynamic Procore custom fields:
+    /// key = "custom_field_%{custom_field_definition_id}"
+    /// value = string | number | bool
+    /// </summary>
+    [JsonExtensionData]
+    public Dictionary<string, object>? CustomFields { get; set; }
+}
+
+
+public class DocumentFolderPayload
+{
+    public string? name;
+    public string? parent_id;
 }
 
 public class DocumentFolder
 {
-    public string id { get; set; } = default!;
-    public string name { get; set; } = default!;
-    public string? parent_id { get; set; }
+    [JsonPropertyName("id")]
+    public int Id { get; set; }
+
+    [JsonPropertyName("name")]
+    public string? Name { get; set; }
+
+    [JsonPropertyName("parent_id")]
+    public int? ParentId { get; set; }
+
+    [JsonPropertyName("private")]
+    public bool Private { get; set; }
+
+    [JsonPropertyName("updated_at")]
+    public DateTime UpdatedAt { get; set; }
+
+    [JsonPropertyName("is_tracked")]
+    public bool IsTracked { get; set; }
+
+    [JsonPropertyName("tracked_folder")]
+    public object? TrackedFolder { get; set; }
+
+    [JsonPropertyName("name_with_path")]
+    public string? NameWithPath { get; set; }
+
+    [JsonPropertyName("folders")]
+    public List<DocumentFolder>? Folders { get; set; }
+
+    [JsonPropertyName("files")]
+    public List<FileItem>? Files { get; set; }
+
+    [JsonPropertyName("read_only")]
+    public bool ReadOnly { get; set; }
+
+    [JsonPropertyName("is_deleted")]
+    public bool IsDeleted { get; set; }
+
+    [JsonPropertyName("is_recycle_bin")]
+    public bool IsRecycleBin { get; set; }
+
+    [JsonPropertyName("has_children")]
+    public bool HasChildren { get; set; }
+
+    [JsonPropertyName("has_children_files")]
+    public bool HasChildrenFiles { get; set; }
+
+    [JsonPropertyName("has_children_folders")]
+    public bool HasChildrenFolders { get; set; }
+
+    [JsonPropertyName("custom_fields")]
+    public Dictionary<string, CustomField>? CustomFields { get; set; }
 }
+
+public class FileItem
+{
+    [JsonPropertyName("id")]
+    public int Id { get; set; }
+
+    [JsonPropertyName("name")]
+    public string? Name { get; set; }
+
+    [JsonPropertyName("parent_id")]
+    public int ParentId { get; set; }
+
+    [JsonPropertyName("size")]
+    public long Size { get; set; }
+
+    [JsonPropertyName("description")]
+    public string? Description { get; set; }
+
+    [JsonPropertyName("updated_at")]
+    public DateTime UpdatedAt { get; set; }
+
+    [JsonPropertyName("created_at")]
+    public DateTime CreatedAt { get; set; }
+
+    [JsonPropertyName("checked_out_until")]
+    public DateTime? CheckedOutUntil { get; set; }
+
+    [JsonPropertyName("name_with_path")]
+    public string? NameWithPath { get; set; }
+
+    [JsonPropertyName("private")]
+    public bool Private { get; set; }
+
+    [JsonPropertyName("is_tracked")]
+    public bool IsTracked { get; set; }
+
+    [JsonPropertyName("tracked_folder")]
+    public object? TrackedFolder { get; set; }
+
+    [JsonPropertyName("checked_out_by")]
+    public User? CheckedOutBy { get; set; }
+
+    [JsonPropertyName("file_type")]
+    public string? FileType { get; set; }
+
+    [JsonPropertyName("file_versions")]
+    public List<FileVersion>? FileVersions { get; set; }
+
+    [JsonPropertyName("legacy_id")]
+    public int LegacyId { get; set; }
+
+    [JsonPropertyName("is_deleted")]
+    public bool IsDeleted { get; set; }
+
+    [JsonPropertyName("custom_fields")]
+    public Dictionary<string, CustomField>? CustomFields { get; set; }
+}
+
+public class FileVersion
+{
+    [JsonPropertyName("id")]
+    public int Id { get; set; }
+
+    [JsonPropertyName("notes")]
+    public string? Notes { get; set; }
+
+    [JsonPropertyName("url")]
+    public string? Url { get; set; }
+
+    [JsonPropertyName("size")]
+    public long Size { get; set; }
+
+    [JsonPropertyName("created_at")]
+    public DateTime CreatedAt { get; set; }
+
+    [JsonPropertyName("number")]
+    public int Number { get; set; }
+
+    [JsonPropertyName("created_by")]
+    public User? CreatedBy { get; set; }
+
+    [JsonPropertyName("prostore_file")]
+    public ProstoreFile? ProstoreFile { get; set; }
+
+    [JsonPropertyName("file_id")]
+    public int FileId { get; set; }
+}
+
+public class ProstoreFile
+{
+    [JsonPropertyName("id")]
+    public int Id { get; set; }
+
+    [JsonPropertyName("name")]
+    public string? Name { get; set; }
+
+    [JsonPropertyName("url")]
+    public string? Url { get; set; }
+
+    [JsonPropertyName("filename")]
+    public string? Filename { get; set; }
+}
+
+public class User
+{
+    [JsonPropertyName("id")]
+    public int Id { get; set; }
+
+    [JsonPropertyName("login")]
+    public string? Login { get; set; }
+
+    [JsonPropertyName("name")]
+    public string? Name { get; set; }
+}
+
+public class CustomField
+{
+    [JsonPropertyName("data_type")]
+    public string? DataType { get; set; }
+
+    // Can be string, number, bool, object, or array
+    [JsonPropertyName("value")]
+    public object? Value { get; set; }
+}
+
 
 public class CommitmentContractPatch
 {
@@ -128,8 +331,6 @@ public class CommitmentContractPatch
     public List<string>? ImageIds { get; set; }
     public List<string>? UploadIds { get; set; }
 }
-
-
 
 // Root
 public sealed class WorkOrderContractResponse

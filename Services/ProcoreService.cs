@@ -5,6 +5,7 @@ using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 namespace Procore.APIClasses;
 
 public class ProcoreService
@@ -17,6 +18,12 @@ public class ProcoreService
         _oauthSession = oauthSession;
         _procoreClient = procoreClient;
     }
+
+    private static readonly JsonSerializerOptions NullJsonOptions =
+    new()
+    {
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+    };
 
 
     // ------------------------------------------------------------
@@ -181,45 +188,68 @@ public class ProcoreService
     // Get document folders in Procore project
     // ------------------------------------------------------------
 
-    private async Task<List<DocumentFolder>> GetDocumentFoldersAsync(
+    private async Task<DocumentFolder> GetDocumentFoldersAsync(
     string projectId)
     {
         var response = await _procoreClient.SendAsync(
             HttpMethod.Get,
-            "1.1",
+            "1.0",
             _oauthSession.Procore.AccessToken,
-            $"projects/{projectId}/document_folders"
+            $"folders?project_id={projectId}"
         );
 
         response.EnsureSuccessStatusCode();
 
         var json = await response.Content.ReadAsStringAsync();
-        return JsonSerializer.Deserialize<List<DocumentFolder>>(json)!;
+        return JsonSerializer.Deserialize<DocumentFolder>(json)!;
     }
 
     private DocumentFolder? FindFolder(
-    IEnumerable<DocumentFolder> folders,
+    DocumentFolder root,
     string? folderName = null,
-    string? parentId = null)
+    int? parentId = null)
     {
+        // Case 1: both null → root
         if (folderName == null && parentId == null)
-        {
-            //return root
-            return folders.FirstOrDefault(f => f.parent_id == parentId);
-        }
-        else if (parentId == null)
-        {
-            return folders.FirstOrDefault(f => f.name.Equals(folderName, StringComparison.OrdinalIgnoreCase));
-        }
-        else
-        {
-            return folders.FirstOrDefault(f =>
-            f.name.Equals(folderName, StringComparison.OrdinalIgnoreCase) &&
-            f.parent_id == parentId
-            );
-        }
-        
+            return root;
+
+        return FindFolderRecursive(root, folderName, parentId);
     }
+
+    private DocumentFolder? FindFolderRecursive(
+        DocumentFolder current,
+        string? folderName,
+        int? parentId)
+    {
+        // Case 2: name only
+        if (folderName != null && parentId == null &&
+            current.Name?.Equals(folderName, StringComparison.OrdinalIgnoreCase) == true)
+        {
+            return current;
+        }
+
+        // Case 3: name + parent
+        if (folderName != null && parentId != null &&
+            current.Name?.Equals(folderName, StringComparison.OrdinalIgnoreCase) == true &&
+            current.ParentId == parentId)
+        {
+            return current;
+        }
+
+        // Recurse into children
+        if (current.Folders != null)
+        {
+            foreach (var child in current.Folders)
+            {
+                var found = FindFolderRecursive(child, folderName, parentId);
+                if (found != null)
+                    return found;
+            }
+        }
+
+        return null;
+    }
+
 
 
     // ------------------------------------------------------------
@@ -229,18 +259,17 @@ public class ProcoreService
     private async Task<DocumentFolder> CreateDocumentFolderAsync(
     string projectId,
     string folderName,
-    string parentFolderId)
+    int? parentFolderId = null)
     {
         var payload = new
         {
-            document_folder = new DocumentFolder
+            folder = new
             {
                 name = folderName,
                 parent_id = parentFolderId
             }
         };
-
-        var json = JsonSerializer.Serialize(payload);
+        var json = JsonSerializer.Serialize(payload, options: NullJsonOptions);
         using var content = new StringContent(json, Encoding.UTF8, "application/json");
 
         var response = await _procoreClient.SendAsync
@@ -266,7 +295,7 @@ public class ProcoreService
 
     private async Task CreateDocumentAsync(
     string projectId,
-    string folderId,
+    long folderId,
     string fileName,
     string uploadUuid)
     {
@@ -274,9 +303,9 @@ public class ProcoreService
         {
             document = new DocumentPayload
             {
-                name = fileName,
-                upload_uuid = uploadUuid,
-                parent_id = folderId
+                Name = fileName,
+                UploadUuid = uploadUuid,
+                ParentId = folderId
             }
         };
 
@@ -284,7 +313,7 @@ public class ProcoreService
             HttpMethod.Post,
             "1.0",
             _oauthSession.Procore.AccessToken,
-            $"projects/{projectId}/documents",
+            $"files?project_id={projectId}",
             null,
             payload
         );
@@ -305,13 +334,13 @@ public class ProcoreService
     )
     {
         // find folder ID for association
-        var folders = await GetDocumentFoldersAsync(projectId);
-        var targetFolder = FindFolder(folders, "Signed_Contracts");
+        var rootFolder = await GetDocumentFoldersAsync(projectId);
+        var targetFolder = FindFolder(rootFolder, "Signed_Contracts");
         if (targetFolder is null)
         {
             // can't find folder, create new
-            var rootFolder = FindFolder(folders) ?? throw new FileNotFoundException("Cannot establish root folder in procore project.");
-            targetFolder = await CreateDocumentFolderAsync(projectId, "Signed_Contracts", rootFolder.id);
+            // var rootFolder = FindFolder(folder) ?? throw new FileNotFoundException("Cannot establish root folder in procore project.");
+            targetFolder = await CreateDocumentFolderAsync(projectId, "Signed_Contracts"); //, rootFolder.Id);
         }
 
         // Generate upload ID and url
@@ -321,7 +350,7 @@ public class ProcoreService
         await UploadFileToS3Async(targetUpload, fileName, fileBytes);
 
         // create document object and associate with upload ID
-        await CreateDocumentAsync(projectId, targetFolder.id, fileName, targetUpload.uuid);
+        // await CreateDocumentAsync(projectId, targetFolder.Id, fileName, targetUpload.uuid);
 
         return targetUpload.uuid;
     }

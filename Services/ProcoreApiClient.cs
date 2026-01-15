@@ -147,7 +147,6 @@ public class ProcoreApiClient
         {
             Console.WriteLine("❌ Refresh error");
             Console.WriteLine(ex);
-            Console.WriteLine($"2 {(ex.Message != null ? ex.Message.GetType() : "error is null")}");
             return (null, ex.Message);
         }
     }

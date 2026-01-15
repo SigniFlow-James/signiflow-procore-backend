@@ -113,9 +113,9 @@ public class SigniflowWebhookProcessor
             pdf = Convert.FromBase64String(document.DocField);
 
             string docName = webhookEvent.DocumentName.Length > 0 ? $"{webhookEvent.DocumentName} Signed" : $"Signed Commitment: {metadata.CommitmentId}";
+
             // Upload document to procore
             var uploadUuid = await _procoreService.FullUploadDocumentAsync(metadata.ProjectId, docName, pdf);
-
             if (string.IsNullOrWhiteSpace(uploadUuid))
             {
                 throw new NullReferenceException("Could not get upload uuid");
@@ -125,7 +125,7 @@ public class SigniflowWebhookProcessor
             var patch = new CommitmentContractPatch
             {
                 Status = new ProcoreEnums.WorkflowStatus().Complete,
-                ContractDate = DateOnly.Parse(webhookEvent.CompletedDate.ToString()),
+                ContractDate = DateOnly.FromDateTime(webhookEvent.CompletedDate),
                 UploadIds = [uploadUuid]
             };
 
@@ -150,7 +150,7 @@ public class SigniflowWebhookProcessor
                 var patch = new CommitmentContractPatch
                 {
                     Status = new ProcoreEnums.WorkflowStatus().Complete,
-                    ContractDate = DateOnly.Parse(webhookEvent.CompletedDate.ToString()),
+                    ContractDate = DateOnly.FromDateTime(webhookEvent.CompletedDate),
                 };
 
                 await _procoreService.PatchCommitmentAsync(
