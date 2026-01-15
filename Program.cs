@@ -39,6 +39,7 @@ builder.Services.AddRouting();
 builder.Services.AddSingleton<OAuthSession>();
 builder.Services.AddSingleton<AuthService>();
 builder.Services.AddSingleton<ISigniflowWebhookQueue, SigniflowWebhookQueue>();
+builder.Services.AddScoped<SigniflowWebhookProcessor>();
 builder.Services.AddHostedService<SigniflowWebhookWorker>();
 
 
@@ -85,7 +86,7 @@ app.Use(async (context, next) =>
 app.MapHealthEndpoints();
 app.MapOAuthEndpoints();
 app.MapApiEndpoints();
-
+app.MapWebhookEndpoints();
 app.Run();
 
 // ============================================================
