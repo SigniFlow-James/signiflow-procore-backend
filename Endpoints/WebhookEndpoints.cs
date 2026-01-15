@@ -5,7 +5,6 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using System.Text.Json;
 using Signiflow.APIClasses;
 
 public static class WebhookEndpoints
