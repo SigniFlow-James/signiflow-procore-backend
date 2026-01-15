@@ -1,3 +1,6 @@
+// ============================================================
+// FILE: Services/WebhookService.cs
+// ============================================================
 using System.Threading.Channels;
 using Microsoft.Extensions.Hosting;
 using Signiflow.APIClasses;
@@ -21,7 +24,6 @@ public class SigniflowWebhookQueue : ISigniflowWebhookQueue
     public IAsyncEnumerable<SigniflowWebhookEvent> DequeueAsync(CancellationToken ct)
         => _channel.Reader.ReadAllAsync(ct);
 }
-
 
 
 public class SigniflowWebhookWorker : BackgroundService
@@ -92,7 +94,7 @@ public class SigniflowWebhookProcessor
             Console.WriteLine($"Processing completed document: DocID={webhookEvent.DocId}");
 
             // Parse the metadata from AdditionalData
-            var metadata = GetMetadata(webhookEvent);
+            var metadata = webhookEvent.Metadata;
             if (metadata == null)
             {
                 Console.WriteLine($"Could not get metadata");
@@ -138,8 +140,7 @@ public class SigniflowWebhookProcessor
         {
             try
             {
-                var metadata = GetMetadata(webhookEvent);
-
+                var metadata = webhookEvent.Metadata;
                 if (metadata == null)
                 {
                     Console.WriteLine($"Metadata missing, with errors: {ex}");
@@ -167,20 +168,8 @@ public class SigniflowWebhookProcessor
             }
         }
     }
-
-    private CommitmentMetadata? GetMetadata(SigniflowWebhookEvent webhookEvent)
-    {
-        CommitmentMetadata? metadata = null;
-        if (webhookEvent.AdditionalData != null)
-        {
-            Console.WriteLine($"Got additional Data: {webhookEvent.AdditionalData}");
-            metadata = JsonSerializer.Deserialize<CommitmentMetadata>(webhookEvent.AdditionalData);
-        }
-        if (metadata == null)
-        {
-            Console.WriteLine("Could not get metadata");
-            return null;
-        }
-        return metadata;
-    }
 }
+
+// ============================================================
+// END FILE: Services/WebhookService.cs
+// ============================================================

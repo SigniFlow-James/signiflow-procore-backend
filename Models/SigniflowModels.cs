@@ -144,8 +144,10 @@ public class SigniflowWebhookEvent
     [JsonPropertyName("CompletedDate")]
     public DateTime CompletedDate { get; set; }
 
-    [JsonPropertyName("AdditionalData")]
     public string? AdditionalData { get; set; }
+
+    [JsonPropertyName("AdditionalData")]
+    public Procore.APIClasses.CommitmentMetadata? Metadata { get; set; }
 
     [JsonPropertyName("DocumentUrl")]
     public string? DocumentUrl { get; set; }
