@@ -1,7 +1,7 @@
 // ============================================================
 // FILE: Services/SigniflowService.cs
 // ============================================================
-using System.Data.SqlTypes;
+using System.Text;
 using System.Text.Json;
 using static Signiflow.APIClasses.SigniflowEnums;
 
@@ -153,12 +153,16 @@ public class SigniflowService
         }
     }
 
-    public async Task<byte[]> DownloadAsync(string documentUrl)
+    public async Task<DownloadResponse> DownloadAsync(string documentId)
     {
-        using var request = new HttpRequestMessage(HttpMethod.Get, documentUrl);
-        var response = await _client.SendAsync(request);
-        response.EnsureSuccessStatusCode();
-        return await response.Content.ReadAsByteArrayAsync();
+        var body = new DownloadRequest
+        {
+            DocIDField = documentId,
+            TokenField = _oauthSession.Signiflow.TokenField
+        };
+
+        var response = await _client.DownloadDocumentAsync(body);
+        return response;
     }
 }
 

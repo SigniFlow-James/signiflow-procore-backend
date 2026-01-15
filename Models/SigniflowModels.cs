@@ -30,6 +30,21 @@ public class Token
     public DateTime TokenExpiryField { get; set; }
 }
 
+// Document Download
+public class DownloadRequest
+{
+    public Token? TokenField { get; set; }
+    public string DocIDField { get; set; } = "";
+}
+
+public class DownloadResponse
+{
+    public string DocField { get; set; } = "";
+    public string DocNameField { get; set; } = "";
+    public string ExtensionField { get; set; } = "";
+    public string ResultField { get; set; } = "";
+}
+
 // Full Workflow Models
 public class FullWorkflowRequest
 {
@@ -118,7 +133,7 @@ public class SigniflowWebhookEvent
     public string EventType { get; set; } = default!;
 
     [JsonPropertyName("DocID")]
-    public int DocId { get; set; }
+    public string DocId { get; set; } = default!;
 
     [JsonPropertyName("DocumentName")]
     public string DocumentName { get; set; } = default!;
@@ -129,7 +144,7 @@ public class SigniflowWebhookEvent
     [JsonPropertyName("CompletedDate")]
     public DateTime CompletedDate { get; set; }
 
-    [JsonPropertyName("AdditionalData")] 
+    [JsonPropertyName("AdditionalData")]
     public string? AdditionalData { get; set; }
 
     [JsonPropertyName("DocumentUrl")]

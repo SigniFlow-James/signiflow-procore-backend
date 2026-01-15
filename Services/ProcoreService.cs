@@ -5,7 +5,6 @@ using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 namespace Procore.APIClasses;
 
 public class ProcoreService
@@ -299,7 +298,7 @@ public class ProcoreService
     // Full contract upload flow
     // ------------------------------------------------------------
 
-    public async Task<string> FullUploadContractAsync(
+    public async Task<string> FullUploadDocumentAsync(
         string projectId,
         string fileName,
         byte[] fileBytes

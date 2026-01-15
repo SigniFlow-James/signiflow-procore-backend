@@ -56,6 +56,16 @@ public class SigniflowApiClient
     }
 
     // ------------------------------------------------------------
+    // Download Document
+    // ------------------------------------------------------------
+    public async Task<DownloadResponse> DownloadDocumentAsync(DownloadRequest request)
+    {
+        return await PostAsync<DownloadResponse>(
+            "GetDoc",
+            request);
+    }
+
+    // ------------------------------------------------------------
     // Core POST helper
     // ------------------------------------------------------------
     private async Task<T> PostAsync<T>(

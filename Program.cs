@@ -38,6 +38,9 @@ builder.Services.AddRouting();
 
 builder.Services.AddSingleton<OAuthSession>();
 builder.Services.AddSingleton<AuthService>();
+builder.Services.AddSingleton<ISigniflowWebhookQueue, SigniflowWebhookQueue>();
+builder.Services.AddHostedService<SigniflowWebhookWorker>();
+
 
 // Register Procore Services
 builder.Services.AddHttpClient<ProcoreApiClient>(client =>

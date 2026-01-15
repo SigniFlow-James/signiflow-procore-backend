@@ -1,7 +1,13 @@
+// ============================================================
+// FILE: Endpoints/ApiEndpoints.cs
+// ============================================================
+
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
 using Procore.APIClasses;
 using Signiflow.APIClasses;
+using Microsoft.Extensions.Hosting;
+using System.Runtime.CompilerServices;
 
 [ApiController]
 [Route("api/webhooks")]
@@ -9,26 +15,48 @@ public class SigniflowWebhookController : ControllerBase
 {
     private readonly ProcoreService _procoreService;
     private readonly SigniflowService _signiflowService;
+    private readonly ISigniflowWebhookQueue _queue;
 
-    public SigniflowWebhookController(ProcoreService procoreService, SigniflowService signiflowService)
+    public SigniflowWebhookController(ProcoreService procoreService, SigniflowService signiflowService, ISigniflowWebhookQueue queue)
     {
         _procoreService = procoreService;
         _signiflowService = signiflowService;
+        _queue = queue;
     }
 
     [HttpPost("signiflow")]
-    public async Task<IActionResult> HandleSigniflowEvent([FromBody] SigniflowWebhookEvent webhookEvent)
+    public async Task<IActionResult> HandleSigniflowEvent(
+    [FromBody] SigniflowWebhookEvent webhookEvent)
+    {
+        try
+        {
+            Console.WriteLine($"Received SigniFlow webhook: {webhookEvent.EventType}");
+
+            await _queue.EnqueueAsync(webhookEvent);
+
+            return Ok(new { status = "received" });
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error receiving SigniFlow webhook {ex}");
+            return StatusCode(500);
+        }
+    }
+
+    public async Task<IActionResult> ProcessDocumentCompletedAsync([FromBody] SigniflowWebhookEvent webhookEvent)
     {
         try
         {
             Console.WriteLine($"Received SigniFlow webhook: {webhookEvent.EventType}");
             Console.WriteLine($"Full payload: {JsonSerializer.Serialize(webhookEvent)}");
 
+            Task? eventTask = null;
+
             // Handle document completion
             if (webhookEvent.EventType == "DocumentCompleted" ||
                 webhookEvent.Status == "Completed")
             {
-                await HandleDocumentCompletedAsync(webhookEvent);
+                eventTask = HandleDocumentCompletedAsync(webhookEvent);
             }
 
             return Ok(new { status = "received" });
@@ -44,12 +72,19 @@ public class SigniflowWebhookController : ControllerBase
     {
         try
         {
+            if (string.IsNullOrWhiteSpace(webhookEvent.DocId))
+            {
+                Console.WriteLine("Webhook Completed event recieved, but could not get Document ID");
+                return;
+            }
+
             Console.WriteLine($"Processing completed document: DocID={webhookEvent.DocId}");
 
             // Parse the metadata from AdditionalData
             CommitmentMetadata? metadata = null;
             if (webhookEvent.AdditionalData != null)
             {
+                Console.WriteLine($"Got additional Data: {webhookEvent.AdditionalData}");
                 metadata = JsonSerializer.Deserialize<CommitmentMetadata>(webhookEvent.AdditionalData);
             }
             if (metadata == null)
@@ -60,22 +95,19 @@ public class SigniflowWebhookController : ControllerBase
 
             //download document from signiflow
             byte[] pdf = [];
-
-            if (!string.IsNullOrWhiteSpace(webhookEvent.DocumentUrl))
+            Console.WriteLine($"Attempting download of document: DocID={webhookEvent.DocId}");
+            var document = await _signiflowService.DownloadAsync(webhookEvent.DocId);
+            if (string.IsNullOrWhiteSpace(document.DocField))
             {
-                pdf = await _signiflowService.DownloadAsync(webhookEvent.DocumentUrl);
+                Console.WriteLine("Could not get Document Base64");
+                return;
             }
-            else
-            {
-                // fallback (older tenants only)
-                //pdf = await DownloadViaApi(@event.DocId);
-            }
-
+            pdf = Convert.FromBase64String(document.DocField);
 
             // Upload document to procore
-            var uploadUuid = await _procoreService.FullUploadContractAsync(metadata.ProjectId, webhookEvent.DocumentName, pdf);
+            var uploadUuid = await _procoreService.FullUploadDocumentAsync(metadata.ProjectId, webhookEvent.DocumentName, pdf);
 
-            
+            // Associate upload to commitment
             var patch = new CommitmentContractPatch
             {
                 Status = new ProcoreEnums.WorkflowStatus().Complete,
@@ -99,3 +131,7 @@ public class SigniflowWebhookController : ControllerBase
         }
     }
 }
+
+// ============================================================
+// END FILE: Endpoints/ApiEndpoints.cs
+// ============================================================
