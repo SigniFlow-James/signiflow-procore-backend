@@ -161,45 +161,41 @@ public class ProcoreService
     private async Task UploadFileToS3Async(
     CreateUploadResponse upload,
     byte[] fileBytes)
+{
+    using var http = new HttpClient();
+
+    foreach (var segment in upload.Segments)
     {
-        using var http = new HttpClient();
+        using var request = new HttpRequestMessage(HttpMethod.Put, segment.Url);
 
-        foreach (var segment in upload.Segments)
+        request.Headers.ExpectContinue = false;
+
+        // Request header (signed)
+        request.Headers.Add(
+            "x-amz-content-sha256",
+            segment.Headers.XAmzContentSha256);
+
+        // Body
+        request.Content = new ByteArrayContent(fileBytes);
+
+        // Content headers (signed)
+        request.Content.Headers.ContentLength = segment.Size;
+
+        request.Content.Headers.Add(
+            "Content-MD5",
+            segment.Headers.ContentMd5);
+
+        var response = await http.SendAsync(request);
+        var body = await response.Content.ReadAsStringAsync();
+
+        if (!response.IsSuccessStatusCode)
         {
-            using var request = new HttpRequestMessage(HttpMethod.Put, segment.Url);
-
-            // Prevent extra handshake headers
-            request.Headers.ExpectContinue = false;
-
-            // REQUIRED signed headers (must match exactly)
-            request.Headers.Add(
-                "x-amz-content-sha256",
-                segment.Headers.XAmzContentSha256);
-
-            request.Headers.Add(
-                "Content-MD5",
-                segment.Headers.ContentMd5);
-
-            // Body
-            request.Content = new ByteArrayContent(fileBytes);
-
-            // MUST match signed values
-            request.Content.Headers.ContentLength =
-                segment.Size;
-
-            // IMPORTANT: Do NOT set Content-Type unless explicitly signed
-            // request.Content.Headers.ContentType = ...
-
-            var response = await http.SendAsync(request);
-            var body = await response.Content.ReadAsStringAsync();
-
-            if (!response.IsSuccessStatusCode)
-            {
-                throw new Exception(
-                    $"S3 upload failed: {(int)response.StatusCode} {response.StatusCode}\n{body}");
-            }
+            throw new Exception(
+                $"S3 upload failed: {(int)response.StatusCode} {response.StatusCode}\n{body}");
         }
     }
+}
+
 
 
 
