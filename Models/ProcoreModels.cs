@@ -39,9 +39,42 @@ public class UploadSegment
 
 public class CreateUploadResponse
 {
-    public string uuid { get; set; } = default!;
-    public string url { get; set; } = default!;
-    public Dictionary<string, string> fields { get; set; } = new();
+    [JsonPropertyName("uuid")]
+    public string Uuid { get; set; } = default!;
+
+    [JsonPropertyName("status")]
+    public string Status { get; set; } = default!;
+
+    [JsonPropertyName("segments")]
+    public List<UploadSegmentResponse> Segments { get; set; } = new();
+}
+
+public class UploadSegmentResponse
+{
+    [JsonPropertyName("etag")]
+    public string Etag { get; set; } = default!;
+
+    [JsonPropertyName("sha256")]
+    public string Sha256 { get; set; } = default!;
+
+    // API returns this as a string (yes, really)
+    [JsonPropertyName("size")]
+    public string Size { get; set; } = default!;
+
+    [JsonPropertyName("url")]
+    public string Url { get; set; } = default!;
+
+    [JsonPropertyName("headers")]
+    public UploadSegmentHeaders Headers { get; set; } = default!;
+}
+
+public class UploadSegmentHeaders
+{
+    [JsonPropertyName("x-amz-content-sha256")]
+    public string XAmzContentSha256 { get; set; } = default!;
+
+    [JsonPropertyName("content-length")]
+    public long ContentLength { get; set; }
 }
 
 

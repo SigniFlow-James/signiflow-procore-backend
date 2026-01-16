@@ -159,29 +159,38 @@ public class ProcoreService
 
     private async Task UploadFileToS3Async(
     CreateUploadResponse upload,
-    string fileName,
     byte[] fileBytes,
     string contentType = "application/pdf")
+{
+    using var http = new HttpClient();
+
+    var offset = 0;
+
+    foreach (var segment in upload.Segments)
     {
-        using var s3Client = new HttpClient();
+        var length = segment.Headers.ContentLength;
+        var segmentBytes = fileBytes
+            .Skip(offset)
+            .Take((int)length)
+            .ToArray();
 
-        using var form = new MultipartFormDataContent();
+        offset += (int)length;
 
-        // VERY IMPORTANT: fields must be added EXACTLY as provided
-        foreach (var field in upload.fields)
-        {
-            form.Add(new StringContent(field.Value), field.Key);
-        }
+        using var request = new HttpRequestMessage(HttpMethod.Put, segment.Url);
+        request.Headers.Add(
+            "x-amz-content-sha256",
+            segment.Headers.XAmzContentSha256);
 
-        // File field MUST be named "file"
-        var fileContent = new ByteArrayContent(fileBytes);
-        fileContent.Headers.ContentType =
+        request.Content = new ByteArrayContent(segmentBytes);
+        request.Content.Headers.ContentType =
             new MediaTypeHeaderValue(contentType);
-        form.Add(fileContent, "file", fileName);
-        Console.WriteLine($"Posting to {upload.url}");
-        var response = await s3Client.PostAsync(upload.url, form);
+        request.Content.Headers.ContentLength = length;
+
+        var response = await http.SendAsync(request);
         response.EnsureSuccessStatusCode();
     }
+}
+
 
 
     // ------------------------------------------------------------
@@ -347,17 +356,17 @@ public class ProcoreService
         // Generate upload ID and url
         Console.WriteLine("creating placeholder object");
         var targetUpload = await CreateUploadAsync(projectId, fileName, fileBytes);
-        Console.WriteLine($"Placeholder created: {targetUpload.url}");
+        Console.WriteLine($"Placeholder created: {targetUpload.Uuid}");
         // upload document to url with ID
 
         Console.WriteLine("Attempting post to AWS");
-        await UploadFileToS3Async(targetUpload, fileName, fileBytes);
+        await UploadFileToS3Async(targetUpload, fileBytes);
         Console.WriteLine("Post success");
 
         // create document object and associate with upload ID
         // await CreateDocumentAsync(projectId, targetFolder.Id, fileName, targetUpload.uuid);
 
-        return targetUpload.uuid;
+        return targetUpload.Uuid;
     }
 
 
