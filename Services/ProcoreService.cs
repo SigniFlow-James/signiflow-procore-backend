@@ -161,43 +161,44 @@ public class ProcoreService
     private async Task UploadFileToS3Async(
     CreateUploadResponse upload,
     byte[] fileBytes)
-{
-    using var http = new HttpClient();
-
-    foreach (var segment in upload.Segments)
     {
-        using var request = new HttpRequestMessage(HttpMethod.Put, segment.Url);
+        using var http = new HttpClient();
 
-        request.Headers.ExpectContinue = false;
+        var offset = 0;
 
-        // Request header (signed)
-        request.Headers.Add(
-            "x-amz-content-sha256",
-            segment.Headers.XAmzContentSha256);
-
-        // Body
-        request.Content = new ByteArrayContent(fileBytes);
-
-        // Content headers (signed)
-        request.Content.Headers.ContentLength = segment.Size;
-
-        request.Content.Headers.Add(
-            "Content-MD5",
-            segment.Headers.ContentMd5);
-
-        var response = await http.SendAsync(request);
-        var body = await response.Content.ReadAsStringAsync();
-
-        if (!response.IsSuccessStatusCode)
+        foreach (var segment in upload.Segments)
         {
-            throw new Exception(
-                $"S3 upload failed: {(int)response.StatusCode} {response.StatusCode}\n{body}");
+            var segmentBytes = fileBytes
+                .Skip(offset)
+                .Take((int)segment.Size)
+                .ToArray();
+
+            offset += (int)segment.Size;
+
+            using var request = new HttpRequestMessage(HttpMethod.Put, segment.Url);
+            request.Headers.ExpectContinue = false;
+
+            request.Headers.Add(
+                "x-amz-content-sha256",
+                segment.Headers.XAmzContentSha256);
+
+            request.Content = new ByteArrayContent(segmentBytes);
+
+            request.Content.Headers.ContentLength = segment.Size;
+            request.Content.Headers.Add(
+                "Content-MD5",
+                segment.Headers.ContentMd5);
+
+            var response = await http.SendAsync(request);
+            var body = await response.Content.ReadAsStringAsync();
+
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new Exception(
+                    $"S3 upload failed: {(int)response.StatusCode} {response.StatusCode}\n{body}");
+            }
         }
     }
-}
-
-
-
 
 
     // ------------------------------------------------------------
