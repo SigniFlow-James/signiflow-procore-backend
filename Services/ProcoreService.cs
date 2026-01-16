@@ -147,6 +147,7 @@ public class ProcoreService
             payload
         );
 
+        Console.WriteLine(await response.Content.ReadAsStringAsync());
         // response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<CreateUploadResponse>()
                ?? throw new InvalidOperationException("Upload creation failed");

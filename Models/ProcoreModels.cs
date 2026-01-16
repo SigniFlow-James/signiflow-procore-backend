@@ -57,9 +57,8 @@ public class UploadSegmentResponse
     [JsonPropertyName("sha256")]
     public string Sha256 { get; set; } = default!;
 
-    // API returns this as a string (yes, really)
     [JsonPropertyName("size")]
-    public string Size { get; set; } = default!;
+    public long Size { get; set; }
 
     [JsonPropertyName("url")]
     public string Url { get; set; } = default!;
@@ -67,6 +66,7 @@ public class UploadSegmentResponse
     [JsonPropertyName("headers")]
     public UploadSegmentHeaders Headers { get; set; } = default!;
 }
+
 
 public class UploadSegmentHeaders
 {
