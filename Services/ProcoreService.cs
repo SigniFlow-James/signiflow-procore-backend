@@ -189,7 +189,7 @@ public class ProcoreService
                 segment.Headers.XAmzContentSha256);
 
             request.Content = new ByteArrayContent(segmentBytes);
-            request.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/pdf");
+            request.Content.Headers.ContentType = new MediaTypeHeaderValue("application/pdf");
             request.Content.Headers.ContentLength = segment.Size;
             request.Content.Headers.Add(
                 "Content-MD5",

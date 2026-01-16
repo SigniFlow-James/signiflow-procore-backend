@@ -112,7 +112,7 @@ public class SigniflowWebhookProcessor
             }
             pdf = Convert.FromBase64String(document.DocField);
 
-            string docName = webhookEvent.DocumentName.Length > 0 ? $"{webhookEvent.DocumentName} Signed" : $"Signed Commitment: {metadata.CommitmentId}";
+            string docName = webhookEvent.DocumentName.Length > 0 ? $"{webhookEvent.DocumentName.Replace(".pdf", "")} Signed.pdf" : $"Signed Commitment: {metadata.CommitmentId}.pdf";
 
             // Upload document to procore
             var uploadUuid = await _procoreService.FullUploadDocumentAsync(metadata.ProjectId, docName, pdf);
