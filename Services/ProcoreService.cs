@@ -141,7 +141,7 @@ public class ProcoreService
         }
         };
 
-        string? extension = method == HttpMethod.Post ? "" : uuid;
+        string? extension = method == HttpMethod.Post ? "" : "/" + uuid;
         var response = await _procoreClient.SendAsync(
             method,
             "1.1",
