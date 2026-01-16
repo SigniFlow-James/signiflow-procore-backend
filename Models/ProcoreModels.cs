@@ -74,8 +74,12 @@ public class UploadSegmentHeaders
     public string XAmzContentSha256 { get; set; } = default!;
 
     [JsonPropertyName("content-length")]
-    public long ContentLength { get; set; }
+    public string ContentLength { get; set; } = default!;
+
+    [JsonPropertyName("content-md5")]
+    public string ContentMd5 { get; set; } = default!;
 }
+
 
 
 public class DocumentPayload
