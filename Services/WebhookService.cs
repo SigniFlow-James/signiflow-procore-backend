@@ -115,7 +115,7 @@ public class SigniflowWebhookProcessor
             string docName = webhookEvent.DocumentName.Length > 0 ? $"{webhookEvent.DocumentName} Signed" : $"Signed Commitment: {metadata.CommitmentId}";
 
             // Upload document to procore
-            var uploadUuid = await _procoreService.FullUploadDocumentAsync(metadata.ProjectId, docName, pdf, true);
+            var uploadUuid = await _procoreService.FullUploadDocumentAsync(metadata.ProjectId, docName, pdf);
             if (string.IsNullOrWhiteSpace(uploadUuid))
             {
                 throw new NullReferenceException("Could not get upload uuid");

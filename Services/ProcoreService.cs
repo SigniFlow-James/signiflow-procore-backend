@@ -110,7 +110,7 @@ public class ProcoreService
     // Create upload in Procore
     // ------------------------------------------------------------
 
-    private async Task<CreateSegmentedUploadResponse> CreateSegmentedUploadAsync(
+    private async Task<dynamic> CreateUploadAsync(
     string projectId,
     string fileName,
     byte[] fileBytes,
@@ -132,53 +132,8 @@ public class ProcoreService
                 ).ToLowerInvariant(),
                 md5 = Convert.ToHexString(
                     MD5.HashData(fileBytes)
-                ).ToLowerInvariant()
-                // etag = Convert.ToHexString(
-                //     MD5.HashData(fileBytes)
-            }
-        }
-        };
-
-        var response = await _procoreClient.SendAsync(
-            HttpMethod.Post,
-            "1.1",
-            _oauthSession.Procore.AccessToken,
-            $"projects/{projectId}/uploads",
-            null,
-            payload
-        );
-
-        Console.WriteLine(await response.Content.ReadAsStringAsync());
-        // response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<CreateSegmentedUploadResponse>()
-               ?? throw new InvalidOperationException("Upload creation failed");
-    }
-
-    private async Task<CreateUploadResponse> CreateUploadAsync(
-    string projectId,
-    string fileName,
-    byte[] fileBytes,
-    string contentType = "application/pdf")
-    {
-        var payload = new CreateUploadRequest
-        {
-            response_filename = fileName,
-            response_content_type = contentType,
-            attachment_content_disposition = false,
-            size = fileBytes.Length,
-            segments = new()
-        {
-            new UploadSegment
-            {
-                size = fileBytes.Length,
-                sha256 = Convert.ToHexString(
-                    SHA256.HashData(fileBytes)
                 ).ToLowerInvariant(),
-                md5 = Convert.ToHexString(
-                    MD5.HashData(fileBytes)
-                ).ToLowerInvariant()
-                // etag = Convert.ToHexString(
-                //     MD5.HashData(fileBytes)
+                etag = Guid.NewGuid().ToString("N")
             }
         }
         };
@@ -194,7 +149,8 @@ public class ProcoreService
 
         Console.WriteLine(await response.Content.ReadAsStringAsync());
         // response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<CreateUploadResponse>()
+        // return await response.Content.ReadFromJsonAsync<CreateUploadResponse>()
+        return await response.Content.ReadAsStringAsync()
                ?? throw new InvalidOperationException("Upload creation failed");
     }
 
@@ -203,79 +159,35 @@ public class ProcoreService
     // Upload file to S3 using provided upload info
     // ------------------------------------------------------------
 
-    private async Task UploadSegmentFileToS3Async(
-    CreateSegmentedUploadResponse upload,
-    byte[] fileBytes)
+    private async Task UploadToS3Async(dynamic uploadPayload, byte[] fileBytes)
+{
+    using var httpClient = new HttpClient();
+    
+    foreach (var segment in uploadPayload.segments)
     {
-        using var http = new HttpClient();
-
-        var offset = 0;
-
-        foreach (var segment in upload.Segments)
-        {
-            var segmentBytes = fileBytes
-                .Skip(offset)
-                .Take((int)segment.Size)
-                .ToArray();
-
-            offset += (int)segment.Size;
-
-            using var request = new HttpRequestMessage(HttpMethod.Put, segment.Url);
-            request.Headers.ExpectContinue = false;
-
-            request.Headers.Add(
-                "x-amz-content-sha256",
-                segment.Headers.XAmzContentSha256);
-
-            request.Content = new ByteArrayContent(segmentBytes);
-
-            request.Content.Headers.ContentLength = segment.Size;
-            request.Content.Headers.Add(
-                "Content-MD5",
-                segment.Headers.ContentMd5);
-
-            var response = await http.SendAsync(request);
-            var body = await response.Content.ReadAsStringAsync();
-
-            if (!response.IsSuccessStatusCode)
-            {
-                throw new Exception(
-                    $"S3 upload failed: {(int)response.StatusCode} {response.StatusCode}\n{body}");
-            }
-        }
-    }
-
-    private async Task UploadFileToS3Async(
-    CreateUploadResponse upload,
-    byte[] fileBytes,
-    string fileName)
-    {
-        using var s3 = new HttpClient();
-
-        // Direct upload using multipart/form-data
-        using var content = new MultipartFormDataContent();
-
-        // Add all fields from the response FIRST, in order
-        foreach (var field in upload.Fields)
-        {
-            content.Add(new StringContent(field.Value), field.Key);
-        }
-
-        // Add the file LAST as per RFC 2388
-        var fileContent = new ByteArrayContent(fileBytes);
-        fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/pdf");
-        content.Add(fileContent, "file", fileName);
-
-        // POST to the S3 URL
-        var response = await s3.PostAsync(upload.Url, content);
-        var body = await response.Content.ReadAsStringAsync();
-
+        using var request = new HttpRequestMessage(HttpMethod.Put, (string)segment.url);
+        
+        // Create content
+        var content = new ByteArrayContent(fileBytes);
+        
+        // Set the exact headers that were included in the signature
+        content.Headers.ContentLength = (long)segment.size;
+        content.Headers.TryAddWithoutValidation("Content-MD5", (string)segment.headers["content-md5"]);
+        
+        // x-amz-content-sha256 must be a request header, not content header
+        request.Headers.TryAddWithoutValidation("x-amz-content-sha256", (string)segment.headers["x-amz-content-sha256"]);
+        
+        request.Content = content;
+        
+        var response = await httpClient.SendAsync(request);
+        
         if (!response.IsSuccessStatusCode)
         {
-            throw new Exception(
-                $"S3 upload failed: {(int)response.StatusCode} {response.StatusCode}\n{body}");
+            var errorBody = await response.Content.ReadAsStringAsync();
+            throw new Exception($"S3 upload failed: {response.StatusCode}\n{errorBody}");
         }
     }
+}
 
 
     // ------------------------------------------------------------
@@ -424,49 +336,34 @@ public class ProcoreService
     public async Task<string> FullUploadDocumentAsync(
         string projectId,
         string fileName,
-        byte[] fileBytes,
-        bool useSegment
+        byte[] fileBytes
     )
     {
-        string uuid;
-        if (useSegment)
-        {
-            // Segmented approach:
-            // Generate upload ID and url
-            Console.WriteLine("creating placeholder segment object");
-            var targetUpload = await CreateSegmentedUploadAsync(projectId, fileName, fileBytes);
-            Console.WriteLine($"Placeholder segment created: {targetUpload.Uuid}");
-            // upload document to url with ID
-            Console.WriteLine("Attempting post to AWS as segment");
-            await UploadSegmentFileToS3Async(targetUpload, fileBytes);
-            Console.WriteLine("Segment post success");
-            uuid = targetUpload.Uuid;
-        }
-        else
-        {
-            // Field approach:
-            // Generate upload ID and url
-            Console.WriteLine("creating placeholder field object");
-            var targetUpload = await CreateUploadAsync(projectId, fileName, fileBytes);
-            Console.WriteLine($"Placeholder field created: {targetUpload.Uuid}");
-            // upload document to url with ID
-            Console.WriteLine("Attempting post to AWS as field");
-            await UploadFileToS3Async(targetUpload, fileBytes, fileName);
-            Console.WriteLine("Field post success");
-            uuid = targetUpload.Uuid;
-        }
+        // find folder ID for association
+        // Console.WriteLine("Finding folder");
+        // var rootFolder = await GetDocumentFoldersAsync(projectId);
+        // var targetFolder = FindFolder(rootFolder, "Signed_Contracts");
+        // if (targetFolder is null)
+        // {
+        //     // can't find folder, create new
+        //     // var rootFolder = FindFolder(folder) ?? throw new FileNotFoundException("Cannot establish root folder in procore project.");
+        //     targetFolder = await CreateDocumentFolderAsync(projectId, "Signed_Contracts"); //, rootFolder.Id);
+        // }
+
+        // Generate upload ID and url
+        Console.WriteLine("creating placeholder object");
+        var targetUpload = await CreateUploadAsync(projectId, fileName, fileBytes);
+        Console.WriteLine($"Placeholder created: {targetUpload.Uuid}");
+        // upload document to url with ID
+
+        Console.WriteLine("Attempting post to AWS");
+        await UploadToS3Async(targetUpload, fileBytes);
+        Console.WriteLine("Post success");
+
         // create document object and associate with upload ID
-        Console.WriteLine("Creating document");
-        try
-        {
-            await CreateDocumentAsync(projectId, 1, fileName, uuid);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine(ex);
-        }
-        Console.WriteLine("Create doc success");
-        return uuid;
+        // await CreateDocumentAsync(projectId, targetFolder.Id, fileName, targetUpload.uuid);
+
+        return targetUpload.Uuid;
     }
 
 

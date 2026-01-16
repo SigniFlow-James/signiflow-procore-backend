@@ -34,28 +34,10 @@ public class UploadSegment
     public long size { get; set; }
     public string sha256 { get; set; } = default!;
     public string md5 { get; set; } = default!;
-    // public string etag { get; set; } = default!; (omit)
+    public string etag { get; set; } = default!;
 }
 
 public class CreateUploadResponse
-{
-    [JsonPropertyName("uuid")]
-    public required string Uuid { get; set; }
-    
-    [JsonPropertyName("url")]
-    public required string Url { get; set; }
-    
-    [JsonPropertyName("fields")]
-    public required Dictionary<string, string> Fields { get; set; }
-    
-    [JsonPropertyName("segments")]
-    public required List<UploadSegment> Segments { get; set; }
-    
-    [JsonPropertyName("status")]
-    public required string Status { get; set; }
-}
-
-public class CreateSegmentedUploadResponse
 {
     [JsonPropertyName("uuid")]
     public string Uuid { get; set; } = default!;
