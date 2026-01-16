@@ -47,11 +47,11 @@ public class AuthService
     {
         string? procoreError = null;
         string? signiflowError = null;
-        if (IsProcoreAuthenticated())
+        if (!IsProcoreAuthenticated())
         {
             (_, procoreError) = await RefreshProcoreTokenAsync();
         }
-        if (IsSigniflowAuthenticated())
+        if (!IsSigniflowAuthenticated())
         {
             (_, signiflowError) = await SigniflowLoginAsync();
         }
