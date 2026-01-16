@@ -115,44 +115,44 @@ public class ProcoreService
     string fileName,
     byte[] fileBytes,
     string contentType = "application/pdf")
-{
-    var sha256Hash = SHA256.HashData(fileBytes);
-    var md5Hash = MD5.HashData(fileBytes);
-    
-    var payload = new CreateUploadRequest
     {
-        response_filename = fileName,
-        response_content_type = contentType,
-        attachment_content_disposition = true,
-        size = fileBytes.Length,
-        segments = new()
+        var payload = new CreateUploadRequest
+        {
+            response_filename = fileName,
+            response_content_type = contentType,
+            attachment_content_disposition = true,
+            size = fileBytes.Length,
+            segments = new()
         {
             new UploadSegment
             {
                 size = fileBytes.Length,
-                // SHA256 in lowercase hex
-                sha256 = Convert.ToHexString(sha256Hash).ToLowerInvariant(),
-                // MD5 in lowercase hex - Procore will convert to base64
-                // md5 = Convert.ToHexString(md5Hash).ToLowerInvariant(),
-                // Hex of S3 object (Omit)
-                // etag = Convert.ToHexString(md5Hash).ToLowerInvariant()
+                sha256 = Convert.ToHexString(
+                    SHA256.HashData(fileBytes)
+                ).ToLowerInvariant(),
+                md5 = Convert.ToHexString(
+                    MD5.HashData(fileBytes)
+                ).ToLowerInvariant()
+                // etag = Convert.ToHexString(
+                //     MD5.HashData(fileBytes)
             }
         }
-    };
+        };
 
-    var response = await _procoreClient.SendAsync(
-        HttpMethod.Post,
-        "1.1",
-        _oauthSession.Procore.AccessToken,
-        $"projects/{projectId}/uploads",
-        null,
-        payload
-    );
+        var response = await _procoreClient.SendAsync(
+            HttpMethod.Post,
+            "1.1",
+            _oauthSession.Procore.AccessToken,
+            $"projects/{projectId}/uploads",
+            null,
+            payload
+        );
 
-    Console.WriteLine(await response.Content.ReadAsStringAsync());
-    return await response.Content.ReadFromJsonAsync<CreateUploadResponse>()
-           ?? throw new InvalidOperationException("Upload creation failed");
-}
+        Console.WriteLine(await response.Content.ReadAsStringAsync());
+        // response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<CreateUploadResponse>()
+               ?? throw new InvalidOperationException("Upload creation failed");
+    }
 
 
     // ------------------------------------------------------------

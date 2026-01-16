@@ -33,7 +33,7 @@ public class UploadSegment
 {
     public long size { get; set; }
     public string sha256 { get; set; } = default!;
-    // public string md5 { get; set; } = default!; (omit)
+    public string md5 { get; set; } = default!;
     // public string etag { get; set; } = default!; (omit)
 }
 
