@@ -110,10 +110,13 @@ public class ProcoreService
     // Create upload in Procore
     // ------------------------------------------------------------
 
-    private async Task<CreateUploadResponse> CreateUploadAsync(
+    private async Task<CreateUploadResponse> DoUploadCallAsync(
     string projectId,
     string fileName,
     byte[] fileBytes,
+    HttpMethod method,
+    List<string>? eTags = null,
+    string? uuid = null,
     string contentType = "application/pdf")
     {
         var payload = new CreateUploadRequest
@@ -133,18 +136,20 @@ public class ProcoreService
                 md5 = Convert.ToHexString(
                     MD5.HashData(fileBytes)
                 ).ToLowerInvariant(),
-                etag = Guid.NewGuid().ToString("N")
+                etag = eTags?.FirstOrDefault()
             }
         }
         };
 
+        string? extension = method == HttpMethod.Post ? "" : uuid;
         var response = await _procoreClient.SendAsync(
-            HttpMethod.Post,
+            method,
             "1.1",
             _oauthSession.Procore.AccessToken,
-            $"projects/{projectId}/uploads",
+            $"projects/{projectId}/uploads{extension}",
             null,
-            payload
+            payload,
+            true
         );
 
         Console.WriteLine(await response.Content.ReadAsStringAsync());
@@ -158,13 +163,14 @@ public class ProcoreService
     // Upload file to S3 using provided upload info
     // ------------------------------------------------------------
 
-    private async Task UploadFileToS3Async(
+    private async Task<List<string>> UploadFileToS3Async(
     CreateUploadResponse upload,
     byte[] fileBytes)
     {
         using var http = new HttpClient();
 
         var offset = 0;
+        var uploadedETags = new List<string>();
 
         foreach (var segment in upload.Segments)
         {
@@ -183,21 +189,72 @@ public class ProcoreService
                 segment.Headers.XAmzContentSha256);
 
             request.Content = new ByteArrayContent(segmentBytes);
-
+            request.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/pdf");
             request.Content.Headers.ContentLength = segment.Size;
             request.Content.Headers.Add(
                 "Content-MD5",
                 segment.Headers.ContentMd5);
 
             var response = await http.SendAsync(request);
-            var body = await response.Content.ReadAsStringAsync();
 
             if (!response.IsSuccessStatusCode)
             {
+                var body = await response.Content.ReadAsStringAsync();
                 throw new Exception(
                     $"S3 upload failed: {(int)response.StatusCode} {response.StatusCode}\n{body}");
             }
+
+            // Extract ETag from response headers
+            if (response.Headers.TryGetValues("ETag", out var etags))
+            {
+                var etag = etags.FirstOrDefault()?.Trim('"');
+                if (etag != null)
+                {
+                    uploadedETags.Add(etag);
+                }
+                else
+                {
+                    throw new Exception("S3 did not return an ETag header");
+                }
+            }
+            else
+            {
+                throw new Exception("S3 did not return an ETag header");
+            }
         }
+
+        return uploadedETags;
+    }
+
+    private async Task<CreateUploadResponse> CompleteUploadAsync(
+        string projectId,
+        string uuid,
+        List<string> etags)
+    {
+        var payload = new
+        {
+            segments = etags.Select(etag => new
+            {
+                etag = etag
+            }).ToArray()
+        };
+
+        var response = await _procoreClient.SendAsync(
+            HttpMethod.Patch,
+            "1.1",
+            _oauthSession.Procore.AccessToken,
+            $"projects/{projectId}/uploads/{uuid}",
+            null,
+            payload
+        );
+
+        var responseBody = await response.Content.ReadAsStringAsync();
+        Console.WriteLine($"Complete upload response: {responseBody}");
+
+        response.EnsureSuccessStatusCode();
+
+        return await response.Content.ReadFromJsonAsync<CreateUploadResponse>()
+               ?? throw new InvalidOperationException("Upload completion failed");
     }
 
 
@@ -363,17 +420,18 @@ public class ProcoreService
 
         // Generate upload ID and url
         Console.WriteLine("creating placeholder object");
-        var targetUpload = await CreateUploadAsync(projectId, fileName, fileBytes);
+        var targetUpload = await DoUploadCallAsync(projectId, fileName, fileBytes, HttpMethod.Post);
         Console.WriteLine($"Placeholder created: {targetUpload.Uuid}");
         // upload document to url with ID
 
         Console.WriteLine("Attempting post to AWS");
-        await UploadFileToS3Async(targetUpload, fileBytes);
+        var etags = await UploadFileToS3Async(targetUpload, fileBytes);
         Console.WriteLine("Post success");
 
-        // create document object and associate with upload ID
-        // await CreateDocumentAsync(projectId, targetFolder.Id, fileName, targetUpload.uuid);
-
+        // Finalise upload object in procore
+        Console.WriteLine("Attempting etag patch to procore upload");
+        await DoUploadCallAsync(projectId, fileName, fileBytes, HttpMethod.Patch, etags, targetUpload.Uuid);
+        Console.WriteLine("Patch complete, file uploaded.");
         return targetUpload.Uuid;
     }
 
