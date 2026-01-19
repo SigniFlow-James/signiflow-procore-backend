@@ -40,7 +40,7 @@ public class ProcoreService
             var exportUrl =
                 $"companies/{companyId}/projects/{projectId}/commitment_contracts/{commitmentId}/pdf";
 
-            // Start export (POST)
+            // Start export and pdg generation on procore side (POST)
             await _procoreClient.SendAsync(
                 HttpMethod.Post,
                 "2.0",
@@ -49,7 +49,7 @@ public class ProcoreService
                 companyId
                 );
 
-            // Poll for PDF (GET)
+            // Poll and wait for PDF to finish generation (GET)
             int retries = AppConfig.RetryLimit;
             byte[]? pdfBytes = null;
 
@@ -110,7 +110,7 @@ public class ProcoreService
     // Create upload in Procore
     // ------------------------------------------------------------
 
-    private async Task<CreateUploadResponse> DoUploadCallAsync(
+    private async Task<CreateUploadResponse> DocumentUploadAsync(
     string projectId,
     string fileName,
     byte[] fileBytes,
@@ -119,6 +119,12 @@ public class ProcoreService
     string? uuid = null,
     string contentType = "application/pdf")
     {
+        // Method Usage options:
+        // Create new upload: 
+        //      method = HttpMethod.Post, eTags = null, uuid = null
+        // Complete upload: 
+        //      method = HttpMethod.Patch, eTags = AWS S3 response tags, uuid = upload ID from POST
+
         var payload = new CreateUploadRequest
         {
             response_filename = fileName,
@@ -225,38 +231,6 @@ public class ProcoreService
 
         return uploadedETags;
     }
-
-    private async Task<CreateUploadResponse> CompleteUploadAsync(
-        string projectId,
-        string uuid,
-        List<string> etags)
-    {
-        var payload = new
-        {
-            segments = etags.Select(etag => new
-            {
-                etag = etag
-            }).ToArray()
-        };
-
-        var response = await _procoreClient.SendAsync(
-            HttpMethod.Patch,
-            "1.1",
-            _oauthSession.Procore.AccessToken,
-            $"projects/{projectId}/uploads/{uuid}",
-            null,
-            payload
-        );
-
-        var responseBody = await response.Content.ReadAsStringAsync();
-        Console.WriteLine($"Complete upload response: {responseBody}");
-
-        response.EnsureSuccessStatusCode();
-
-        return await response.Content.ReadFromJsonAsync<CreateUploadResponse>()
-               ?? throw new InvalidOperationException("Upload completion failed");
-    }
-
 
     // ------------------------------------------------------------
     // Get document folders in Procore project
@@ -382,7 +356,6 @@ public class ProcoreService
                 ParentId = folderId
             }
         };
-
         var response = await _procoreClient.SendAsync(
             HttpMethod.Post,
             "1.0",
@@ -391,9 +364,7 @@ public class ProcoreService
             null,
             payload
         );
-
         response.EnsureSuccessStatusCode();
-
     }
 
 
@@ -407,30 +378,19 @@ public class ProcoreService
         byte[] fileBytes
     )
     {
-        // find folder ID for association
-        // Console.WriteLine("Finding folder");
-        // var rootFolder = await GetDocumentFoldersAsync(projectId);
-        // var targetFolder = FindFolder(rootFolder, "Signed_Contracts");
-        // if (targetFolder is null)
-        // {
-        //     // can't find folder, create new
-        //     // var rootFolder = FindFolder(folder) ?? throw new FileNotFoundException("Cannot establish root folder in procore project.");
-        //     targetFolder = await CreateDocumentFolderAsync(projectId, "Signed_Contracts"); //, rootFolder.Id);
-        // }
-
         // Generate upload ID and url
         Console.WriteLine("creating placeholder object");
-        var targetUpload = await DoUploadCallAsync(projectId, fileName, fileBytes, HttpMethod.Post);
+        var targetUpload = await DocumentUploadAsync(projectId, fileName, fileBytes, HttpMethod.Post);
         Console.WriteLine($"Placeholder created: {targetUpload.Uuid}");
-        // upload document to url with ID
 
+        // upload document to url with ID
         Console.WriteLine("Attempting post to AWS");
         var etags = await UploadFileToS3Async(targetUpload, fileBytes);
         Console.WriteLine("Post success");
 
         // Finalise upload object in procore
         Console.WriteLine("Attempting etag patch to procore upload");
-        await DoUploadCallAsync(projectId, fileName, fileBytes, HttpMethod.Patch, etags, targetUpload.Uuid);
+        await DocumentUploadAsync(projectId, fileName, fileBytes, HttpMethod.Patch, etags, targetUpload.Uuid);
         Console.WriteLine("Patch complete, file uploaded.");
         return targetUpload.Uuid;
     }
@@ -449,14 +409,6 @@ public class ProcoreService
     {
         await HandleCommitmentRequestAsync(commitmentId, projectId, companyId, HttpMethod.Patch, patch, true);
     }
-
-    // public async Task GetCommitmentAsync(
-    // string commitmentId,
-    // string projectId,
-    // string companyId)
-    // {
-    //     return await HandleCommitmentRequestAsync(commitmentId, projectId, companyId, HttpMethod.Get, null, false);
-    // }
 
     private async Task HandleCommitmentRequestAsync(
     string commitmentId,
@@ -479,9 +431,8 @@ public class ProcoreService
                 useJsonOptions
                 );
 
-            Console.WriteLine(await response.Content.ReadAsStringAsync());
+            // Console.WriteLine(await response.Content.ReadAsStringAsync());
             response.EnsureSuccessStatusCode();
-
         }
         catch (Exception ex)
         {
