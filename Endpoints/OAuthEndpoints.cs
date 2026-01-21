@@ -132,7 +132,11 @@ public static class OAuthEndpoints
                 ", "text/html");
         });
 
-        // Refresh token
+
+        // ------------------------------------------------------------
+        // Auth refresh
+        // ------------------------------------------------------------
+
         app.MapPost("/api/oauth/refresh", async (
             HttpResponse response,
             AuthService authService,
@@ -148,7 +152,11 @@ public static class OAuthEndpoints
             ));
         });
 
+
+        // ------------------------------------------------------------
         // Auth status
+        // ------------------------------------------------------------
+        
         app.MapGet("/api/oauth/status", (AuthService authService, OAuthSession oauthSession) =>
         {
             return Results.Json(GenerateOAuthFullInfo(
