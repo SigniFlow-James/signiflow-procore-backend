@@ -94,10 +94,11 @@ public class ProcoreService
                            ?? [];
             var recipients = users.Select(user => new ProcoreVendorRecipient
             {
-
-                Name = user.Name,
-                EmailAddress = user.EmailAddress,
-                PrimaryContact = user.PrimaryContact,
+                VendorId = user.BusinessId,
+                VendorName = user.Name,
+                EmailAddress = user.PrimaryContact.EmailAddress ?? user.EmailAddress,
+                PrimaryContactFirstName = user.PrimaryContact.FirstName,
+                PrimaryContactLastName = user.PrimaryContact.LastName
             }).ToList();
 
             return recipients;

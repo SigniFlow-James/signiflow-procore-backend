@@ -200,7 +200,7 @@ public class ProcoreVendor
     public bool AuthorizedBidder { get; set; }
 
     [JsonPropertyName("business_id")]
-    public Guid? BusinessId { get; set; }
+    public required string BusinessId { get; set; }
 
     [JsonPropertyName("business_phone")]
     public required string BusinessPhone { get; set; }
@@ -373,14 +373,17 @@ public class VendorGroup
 
 public class ProcoreVendorRecipient
 {
-    [JsonPropertyName("business_id")]
-    public Guid? BusinessId { get; set; }
+    [JsonPropertyName("vendor_id")]
+    public required string VendorId { get; set; }
 
-    [JsonPropertyName("name")]
-    public required string Name { get; set; }
+    [JsonPropertyName("vendor_name")]
+    public required string VendorName { get; set; }
 
-    [JsonPropertyName("primary_contact")]
-    public required PrimaryContact PrimaryContact { get; set; }
+    [JsonPropertyName("primary_contact_first_name")]
+    public required string PrimaryContactFirstName { get; set; }
+
+    [JsonPropertyName("primary_contact_last_name")]
+    public required string PrimaryContactLastName { get; set; }
 
     [JsonPropertyName("email_address")]
     public required string EmailAddress { get; set; }

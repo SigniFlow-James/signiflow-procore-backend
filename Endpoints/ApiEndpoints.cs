@@ -41,7 +41,8 @@ public static class ApiEndpoints
             HttpRequest request,
             HttpResponse response,
             ProcoreService procoreService, 
-            AuthService authService
+            AuthService authService,
+            FilterService filterService
         ) =>
         {
             Console.WriteLine("📥 /api/recipients received");
@@ -92,8 +93,11 @@ public static class ApiEndpoints
             }
 
             // Fetch recipients
+            var filters = await filterService.GetFiltersAsync();
             var users = await procoreService.GetProcoreUsersAsync(companyId, projectId);
+            users = filterService.FilterUsersAsync(users, filters);
             var vendors = await procoreService.GetProcoreVendorsAsync(companyId, projectId);
+            vendors = filterService.FilterVendorsAsync(vendors, filters);
 
             response.StatusCode = 200;
             await response.WriteAsJsonAsync(new
