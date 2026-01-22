@@ -37,6 +37,73 @@ public static class ApiEndpoints
         }
         );
 
+        app.MapGet("/api/recipients", async (
+            HttpRequest request,
+            HttpResponse response,
+            ProcoreService procoreService, 
+            AuthService authService
+        ) =>
+        {
+            Console.WriteLine("📥 /api/recipients received");
+            // Auth guard
+            if (!await authService.CheckAuthResponseAsync(response))
+            {
+                response.StatusCode = 401;
+                await response.WriteAsJsonAsync(new { error = "Authentication failed" });
+                return;
+            }
+            // Parse body
+            JsonElement body;
+            try
+            {
+                body = await JsonSerializer.DeserializeAsync<JsonElement>(request.Body);
+            }
+            catch
+            {
+                response.StatusCode = 400;
+                await response.WriteAsJsonAsync(new { error = "Invalid JSON body" });
+                return;
+            }
+            if (!body.TryGetProperty("context", out var context))
+            {
+                Console.WriteLine("❌ Missing form or context");
+                response.StatusCode = 400;
+                await response.WriteAsJsonAsync(new { error = "Missing form or context" });
+                return;
+            }
+
+            // Extract Procore context
+            if (!context.TryGetProperty("company_id", out var companyIdProp) ||
+                !context.TryGetProperty("project_id", out var projectIdProp))
+            {
+                Console.WriteLine("❌ Invalid Procore context");
+                response.StatusCode = 400;
+                await response.WriteAsJsonAsync(new { error = "Invalid Procore context" });
+                return;
+            }
+            var companyId = companyIdProp.GetString();
+            var projectId = projectIdProp.GetString();
+            if (companyId == null || projectId == null)
+            {
+                Console.WriteLine("❌ Missing Procore context IDs");
+                response.StatusCode = 400;
+                await response.WriteAsJsonAsync(new { error = "Missing Procore context IDs" });
+                return;
+            }
+
+            // Fetch recipients
+            var users = await procoreService.GetProcoreUsersAsync(companyId, projectId);
+            var vendors = await procoreService.GetProcoreVendorsAsync(companyId, projectId);
+
+            response.StatusCode = 200;
+            await response.WriteAsJsonAsync(new
+            {
+                users,
+                vendors
+            });
+        }
+        );
+
         // Send Procore PDF to SigniFlow
         app.MapPost("/api/send", async (
             HttpRequest request,

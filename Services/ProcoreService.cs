@@ -25,6 +25,90 @@ public class ProcoreService
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
 
+    // ------------------------------------------------------------
+    // Get Procore Users
+    // ------------------------------------------------------------
+
+    public async Task<List<ProcoreUserRecipient>> GetProcoreUsersAsync(
+        string companyId,
+        string projectId 
+    )
+    {
+        try
+        {
+            var response = await _procoreClient.SendAsync(
+                HttpMethod.Get,
+                "1.0",
+                _oauthSession.Procore.AccessToken,
+                $"projects/{projectId}/users",
+                companyId
+            );
+
+            response.EnsureSuccessStatusCode();
+
+            var json = await response.Content.ReadAsStringAsync();
+            var users = JsonSerializer.Deserialize<List<ProcoreUser>>(json)
+                           ?? [];
+            var recipients = users.Select(user => new ProcoreUserRecipient
+            {
+                EmployeeId = user.EmployeeId,
+                EmailAddress = user.EmailAddress,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                JobTitle = user.JobTitle
+            }).ToList();
+
+            return recipients;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("❌ Error fetching Procore managers:");
+            Console.WriteLine(ex);
+            return [];
+        }
+    }
+
+    // ------------------------------------------------------------
+    // Get Procore Vendors
+    // ------------------------------------------------------------
+
+    public async Task<List<ProcoreVendorRecipient>> GetProcoreVendorsAsync(
+        string companyId,
+        string projectId 
+    )
+    {
+        try
+        {
+            var response = await _procoreClient.SendAsync(
+                HttpMethod.Get,
+                "1.1",
+                _oauthSession.Procore.AccessToken,
+                $"projects/{projectId}/vendors",
+                companyId
+            );
+
+            response.EnsureSuccessStatusCode();
+
+            var json = await response.Content.ReadAsStringAsync();
+            var users = JsonSerializer.Deserialize<List<ProcoreVendor>>(json)
+                           ?? [];
+            var recipients = users.Select(user => new ProcoreVendorRecipient
+            {
+
+                Name = user.Name,
+                EmailAddress = user.EmailAddress,
+                PrimaryContact = user.PrimaryContact,
+            }).ToList();
+
+            return recipients;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("❌ Error fetching Procore managers:");
+            Console.WriteLine(ex);
+            return [];
+        }
+    }
 
     // ------------------------------------------------------------
     // Export commitment PDF from Procore
