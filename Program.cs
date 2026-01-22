@@ -88,6 +88,7 @@ app.MapHealthEndpoints();
 app.MapOAuthEndpoints();
 app.MapApiEndpoints();
 app.MapWebhookEndpoints();
+app.MapAdminEndpoints();
 app.Run();
 
 // ============================================================
