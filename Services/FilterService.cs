@@ -20,35 +20,53 @@ public class FilterService
     {
         if (!File.Exists(_filtersFilePath))
         {
-            File.Create(_filtersFilePath).Dispose();
-            // Return empty filters if file doesn't exist
+            var empty = new FilterData
+            {
+                Users = [],
+                Vendors = []
+            };
+
+            await File.WriteAllTextAsync(
+                _filtersFilePath,
+                JsonSerializer.Serialize(empty)
+            );
+
+            return empty;
+        }
+
+
+        var json = await File.ReadAllTextAsync(_filtersFilePath);
+
+        if (string.IsNullOrWhiteSpace(json))
+        {
             return new FilterData
             {
-                Users = new List<FilterItem>(),
-                Vendors = new List<FilterItem>()
+                Users = [],
+                Vendors = []
             };
         }
 
         try
         {
-            var json = await File.ReadAllTextAsync(_filtersFilePath);
-            var filters = JsonSerializer.Deserialize<FilterData>(json);
-            return filters ?? new FilterData
-            {
-                Users = new List<FilterItem>(),
-                Vendors = new List<FilterItem>()
-            };
+            return JsonSerializer.Deserialize<FilterData>(json)
+                ?? new FilterData
+                {
+                    Users = [],
+                    Vendors = []
+                };
         }
-        catch (Exception ex)
+        catch (JsonException ex)
         {
-            Console.WriteLine($"⚠️ Error reading filters file: {ex.Message}");
+            Console.WriteLine($"⚠️ Invalid JSON in filters file: {ex.Message}");
+
             return new FilterData
             {
-                Users = new List<FilterItem>(),
-                Vendors = new List<FilterItem>()
+                Users = [],
+                Vendors = []
             };
         }
     }
+
 
     public async Task SaveFiltersAsync(List<FilterItem> managers, List<FilterItem> recipients)
     {
