@@ -46,6 +46,12 @@ public class DownloadResponse
 }
 
 // Full Workflow Models
+public class BasicUserInfo
+{
+    public string FirstNames { get; set; } = "";
+    public string LastName{ get; set; } = "";
+    public string Email { get; set; } = "";
+}
 public class FullWorkflowRequest
 {
     public string AdditionalDataField { get; set; } = "";
@@ -54,7 +60,7 @@ public class FullWorkflowRequest
     public string CustomMessageField { get; set; } = "";
     public string DocField { get; set; } = null!;
     public string DocNameField { get; set; } = null!;
-    public DateTime DueDateField { get; set; }
+    public DateTime? DueDateField { get; set; }
     public int ExtensionField { get; set; }
     public PortfolioInfo PortfolioInformationField { get; set; } = new();
     public int PriorityField { get; set; }

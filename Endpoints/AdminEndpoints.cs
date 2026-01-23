@@ -1,12 +1,10 @@
 // ============================================================
-// FILE: Endpoints/ApiEndpoints.cs
+// FILE: Endpoints/AdminEndpoints.cs
 // ============================================================
 using System.Text.Json;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
-using Signiflow.APIClasses;
 using Procore.APIClasses;
-using System.Net.Http.Headers;
 
 public static class AdminEndpoints
 {
@@ -71,7 +69,34 @@ public static class AdminEndpoints
             }
         });
 
-        // Save admin filters
+        // Get dashboard data (filters and viewers)
+        app.MapGet("/admin/dashboard", async (
+            HttpResponse response,
+            FilterService filterService
+        ) =>
+        {
+            Console.WriteLine("📥 /admin/dashboard GET received");
+
+            try
+            {
+                var data = await filterService.GetDashboardDataAsync();
+                
+                response.StatusCode = 200;
+                await response.WriteAsJsonAsync(new
+                {
+                    filters = data.Filters,
+                    viewers = data.Viewers
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Error loading dashboard data: {ex.Message}");
+                response.StatusCode = 500;
+                await response.WriteAsJsonAsync(new { error = "Failed to load dashboard data" });
+            }
+        });
+
+        // Save filters
         app.MapPost("/admin/filters", async (
             HttpRequest request,
             HttpResponse response,
@@ -93,28 +118,26 @@ public static class AdminEndpoints
                 return;
             }
 
-            if (!body.TryGetProperty("managers", out var managersJson) ||
-                !body.TryGetProperty("recipients", out var recipientsJson))
+            if (!body.TryGetProperty("filters", out var filtersJson))
             {
-                Console.WriteLine("❌ Missing managers or recipients");
+                Console.WriteLine("❌ Missing filters");
                 response.StatusCode = 400;
-                await response.WriteAsJsonAsync(new { error = "Missing managers or recipients" });
+                await response.WriteAsJsonAsync(new { error = "Missing filters" });
                 return;
             }
 
             try
             {
-                var managers = JsonSerializer.Deserialize<List<FilterItem>>(managersJson.GetRawText());
-                var recipients = JsonSerializer.Deserialize<List<FilterItem>>(recipientsJson.GetRawText());
+                var filters = JsonSerializer.Deserialize<List<FilterItem>>(filtersJson.GetRawText());
 
-                if (managers == null || recipients == null)
+                if (filters == null)
                 {
                     throw new Exception("Failed to deserialize filter items");
                 }
 
-                await filterService.SaveFiltersAsync(managers, recipients);
+                await filterService.SaveFiltersAsync(filters);
 
-                Console.WriteLine($"✅ Filters saved: {managers.Count} managers, {recipients.Count} recipients");
+                Console.WriteLine($"✅ Filters saved: {filters.Count} filters");
                 response.StatusCode = 200;
                 await response.WriteAsJsonAsync(new
                 {
@@ -130,35 +153,92 @@ public static class AdminEndpoints
             }
         });
 
-        // Get filters
-        app.MapGet("/admin/filters", async (
+        // Save viewers
+        app.MapPost("/admin/viewers", async (
+            HttpRequest request,
             HttpResponse response,
             FilterService filterService
         ) =>
         {
-            Console.WriteLine("📥 /admin/filters GET received");
+            Console.WriteLine("📥 /admin/viewers POST received");
+
+            // Parse body
+            JsonElement body;
+            try
+            {
+                body = await JsonSerializer.DeserializeAsync<JsonElement>(request.Body);
+            }
+            catch
+            {
+                response.StatusCode = 400;
+                await response.WriteAsJsonAsync(new { error = "Invalid JSON body" });
+                return;
+            }
+
+            if (!body.TryGetProperty("viewers", out var viewersJson))
+            {
+                Console.WriteLine("❌ Missing viewers");
+                response.StatusCode = 400;
+                await response.WriteAsJsonAsync(new { error = "Missing viewers" });
+                return;
+            }
 
             try
             {
-                var filters = await filterService.GetFiltersAsync();
-                
+                var viewers = JsonSerializer.Deserialize<List<ViewerItem>>(viewersJson.GetRawText());
+
+                if (viewers == null)
+                {
+                    throw new Exception("Failed to deserialize viewer items");
+                }
+
+                await filterService.SaveViewersAsync(viewers);
+
+                Console.WriteLine($"✅ Viewers saved: {viewers.Count} viewers");
                 response.StatusCode = 200;
                 await response.WriteAsJsonAsync(new
                 {
-                    managers = filters.Users,
-                    recipients = filters.Vendors
+                    success = true,
+                    message = "Viewers saved successfully"
                 });
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ Error loading filters: {ex.Message}");
+                Console.WriteLine($"❌ Error saving viewers: {ex.Message}");
                 response.StatusCode = 500;
-                await response.WriteAsJsonAsync(new { error = "Failed to load filters" });
+                await response.WriteAsJsonAsync(new { error = "Failed to save viewers" });
+            }
+        });
+
+        // Get user info
+        app.MapGet("/admin/users", async (
+            HttpResponse response,
+            ProcoreService procoreService
+        ) =>
+        {
+            Console.WriteLine("📥 /admin/users GET received");
+
+            try
+            {
+                var company = response.Headers["x-procore-company-id"].ToString();
+                var companies = await procoreService.GetProcoreUsersAsync(company);
+                
+                response.StatusCode = 200;
+                await response.WriteAsJsonAsync(new
+                {
+                    value = companies
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Error loading companies: {ex.Message}");
+                response.StatusCode = 500;
+                await response.WriteAsJsonAsync(new { error = "Failed to load companies" });
             }
         });
     }
 }
 
 // ============================================================
-// END FILE: Endpoints/ApiEndpoints.cs
+// END FILE: Endpoints/AdminEndpoints.cs
 // ============================================================

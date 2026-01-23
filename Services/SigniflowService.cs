@@ -37,9 +37,9 @@ public class SigniflowService
     byte[] pdfBytes,
     Procore.APIClasses.CommitmentMetadata metaData,
     string documentName,
-    string signerEmail,
-    string signerFirstNames,
-    string signerLastName,
+    BasicUserInfo signerOne,
+    BasicUserInfo signerTwo,
+    List<ViewerItem> viewers,
     string customMessage)
     {
         try
@@ -85,56 +85,27 @@ public class SigniflowService
                 }
             };
 
-            // ---------------- WORKFLOW SIGNER FIELDS ----------------
-            var signerFields = new List<WorkflowUserFieldInformation>
-        {
-            new WorkflowUserFieldInformation
+            var signerOneFullInfo = GenerateWorkflowSignerInfo(
+                signerOne, 
+                "ProcoreGeneralContractorSignHere",
+                "ProcoreGeneralContractorSignedDate"
+                );
+            var signerTwoFullInfo = GenerateWorkflowSignerInfo(
+                signerTwo, 
+                "ProcoreSubContractorSignHere",
+                "ProcoreSubContractorSignedDate"
+                );
+
+            // Get viewers
+            List<WorkflowUserInfo> workflowViewers = [];
+            foreach (ViewerItem viewer in viewers) 
             {
-                FieldTypeField = (int)FieldType.Signature,
-                PageNumberField = 1,
-                TagNameField = "ProcoreGeneralContractorSignHere",
-                WidthField = "133",
-                HeightField = "40",
-                XOffsetField = 0,
-                YOffsetField = -35,
-                IsInvisibleField = false
-            },
-            new WorkflowUserFieldInformation
-            {
-                FieldTypeField = (int)FieldType.DateText,
-                PageNumberField = 1,
-                TagNameField = "ProcoreGeneralContractorSignedDate",
-                WidthField = "200",
-                HeightField = "25",
-                XOffsetField = 0,
-                YOffsetField = -20,
-                IsInvisibleField = false
+                var workflowViewer = GenerateWorkflowViewerInfo(viewer);
+                if (workflowViewer == null) continue;
+                workflowViewers.Add(workflowViewer);
             }
-        };
-            // ---------------- WORKFLOW USER INFO ----------------
-            var signer = new WorkflowUserInfo
-            {
-                ActionField = (int)ActionRequired.SignDocument,
-                AllowProxyField = (int)ProxyAllowed.Yes,
-                AutoSignField = false,
-                EmailAddressField = signerEmail,
-                LanguageCodeField = "en",
-                MobileNumberField = string.Empty,
-                SendCompletedEmailField = (int)SendCompletedEmail.Yes,
-                SignReasonField = "I Accept this document.",
-                UserFullNameField = signerFirstNames + " " + signerLastName,
-                UserFirstNameField = signerFirstNames,
-                UserLastNameField = signerLastName,
-                LatitudeField = "",
-                LongitudeField = "",
-                SignerPasswordField = "",
-                PhotoAtSigningField = 0,
-                SignatureTypeField = 0,
 
-                WorkflowUserFieldsField = signerFields
-            };
-
-            workflowRequest.WorkflowUsersListField = new List<WorkflowUserInfo> { signer };
+            workflowRequest.WorkflowUsersListField = [signerTwoFullInfo, signerOneFullInfo, .. workflowViewers];
 
             // ---------------- EXECUTE ----------------
             Console.WriteLine("Workflow Request:");
@@ -151,6 +122,100 @@ public class SigniflowService
             Console.WriteLine(ex);
             return (null, "Unexpected SigniFlow error");
         }
+    }
+
+    public WorkflowUserInfo GenerateWorkflowSignerInfo(
+        BasicUserInfo info, 
+        string signTag, 
+        string dateTag)
+    {
+        var first = info.FirstNames.Trim();
+        var last = info.LastName.Trim();
+        var email = info.Email.Trim();
+        // ---------------- WORKFLOW SIGNER FIELDS ----------------
+        var signerFields = new List<WorkflowUserFieldInformation>
+        {
+            new WorkflowUserFieldInformation
+            {
+                FieldTypeField = (int)FieldType.Signature,
+                PageNumberField = 1,
+                TagNameField = signTag,
+                WidthField = "133",
+                HeightField = "40",
+                XOffsetField = 0,
+                YOffsetField = -35,
+                IsInvisibleField = false
+            },
+            new WorkflowUserFieldInformation
+            {
+                FieldTypeField = (int)FieldType.DateText,
+                PageNumberField = 1,
+                TagNameField = dateTag,
+                WidthField = "200",
+                HeightField = "25",
+                XOffsetField = 0,
+                YOffsetField = -20,
+                IsInvisibleField = false
+            }
+        };
+
+        // ---------------- WORKFLOW USER INFO ----------------
+        var signer = new WorkflowUserInfo
+        {
+            ActionField = (int)ActionRequired.SignDocument,
+            AllowProxyField = (int)ProxyAllowed.Yes,
+            AutoSignField = false,
+            EmailAddressField = email,
+            LanguageCodeField = "en",
+            MobileNumberField = "",
+            SendCompletedEmailField = (int)SendCompletedEmail.Yes,
+            SignReasonField = "I Accept this document.",
+            UserFullNameField = first + " " + last,
+            UserFirstNameField = first,
+            UserLastNameField = last,
+            LatitudeField = "",
+            LongitudeField = "",
+            SignerPasswordField = "",
+            // PhotoAtSigningField = 0,
+            SignatureTypeField = 0,
+
+            WorkflowUserFieldsField = signerFields
+        };
+
+        return signer;
+    }
+
+    public WorkflowUserInfo? GenerateWorkflowViewerInfo(
+        ViewerItem info
+        )
+    {
+        var first = info.FirstNames ?? "";
+        var last = info.LastName ?? "";
+        var email = info.Email ?? "";
+
+        if (first == "" || last == "" || email == "")
+        {
+            return null;
+        }
+
+        // ---------------- WORKFLOW USER INFO ----------------
+        var viewer = new WorkflowUserInfo
+        {
+            ActionField = (int)ActionRequired.ViewDocument,
+            AllowProxyField = (int)ProxyAllowed.No,
+            AutoSignField = false,
+            EmailAddressField = email,
+            LanguageCodeField = "en",
+            MobileNumberField = "",
+            SendCompletedEmailField = (int)SendCompletedEmail.Yes,
+            UserFullNameField = first + " " + last,
+            UserFirstNameField = first,
+            UserLastNameField = last,
+            LatitudeField = "",
+            LongitudeField = ""
+        };
+
+        return viewer;
     }
 
     public async Task<DownloadResponse> DownloadAsync(string documentId)

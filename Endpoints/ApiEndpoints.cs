@@ -40,12 +40,13 @@ public static class ApiEndpoints
         app.MapGet("/api/recipients", async (
             HttpRequest request,
             HttpResponse response,
-            ProcoreService procoreService, 
+            ProcoreService procoreService,
             AuthService authService,
             FilterService filterService
         ) =>
         {
             Console.WriteLine("📥 /api/recipients received");
+
             // Auth guard
             if (!await authService.CheckAuthResponseAsync(response))
             {
@@ -53,60 +54,31 @@ public static class ApiEndpoints
                 await response.WriteAsJsonAsync(new { error = "Authentication failed" });
                 return;
             }
-            // Parse body
-            JsonElement body;
-            try
-            {
-                body = await JsonSerializer.DeserializeAsync<JsonElement>(request.Body);
-            }
-            catch
-            {
-                response.StatusCode = 400;
-                await response.WriteAsJsonAsync(new { error = "Invalid JSON body" });
-                return;
-            }
-            if (!body.TryGetProperty("context", out var context))
-            {
-                Console.WriteLine("❌ Missing form or context");
-                response.StatusCode = 400;
-                await response.WriteAsJsonAsync(new { error = "Missing form or context" });
-                return;
-            }
 
-            // Extract Procore context
-            if (!context.TryGetProperty("company_id", out var companyIdProp) ||
-                !context.TryGetProperty("project_id", out var projectIdProp))
-            {
-                Console.WriteLine("❌ Invalid Procore context");
-                response.StatusCode = 400;
-                await response.WriteAsJsonAsync(new { error = "Invalid Procore context" });
-                return;
-            }
-            var companyId = companyIdProp.GetString();
-            var projectId = projectIdProp.GetString();
-            if (companyId == null || projectId == null)
+            // Read query parameters
+            var companyId = request.Query["company_id"].ToString();
+            var projectId = request.Query["project_id"].ToString();
+
+            if (string.IsNullOrWhiteSpace(companyId) || string.IsNullOrWhiteSpace(projectId))
             {
                 Console.WriteLine("❌ Missing Procore context IDs");
                 response.StatusCode = 400;
-                await response.WriteAsJsonAsync(new { error = "Missing Procore context IDs" });
+                await response.WriteAsJsonAsync(new
+                {
+                    error = "Missing required query parameters: company_id and project_id"
+                });
                 return;
             }
 
             // Fetch recipients
-            var filters = await filterService.GetFiltersAsync();
+
             var users = await procoreService.GetProcoreUsersAsync(companyId, projectId);
-            users = filterService.FilterUsersAsync(users, filters);
-            var vendors = await procoreService.GetProcoreVendorsAsync(companyId, projectId);
-            vendors = filterService.FilterVendorsAsync(vendors, filters);
+            var filteredUsers = filterService.FilterUsers(users, companyId, projectId);
 
             response.StatusCode = 200;
-            await response.WriteAsJsonAsync(new
-            {
-                users,
-                vendors
-            });
-        }
-        );
+            await response.WriteAsJsonAsync(filteredUsers);
+        });
+
 
         // Send Procore PDF to SigniFlow
         app.MapPost("/api/send", async (
@@ -114,7 +86,8 @@ public static class ApiEndpoints
             HttpResponse response,
             AuthService authService,
             ProcoreService procoreService,
-            SigniflowService signiflowService
+            SigniflowService signiflowService,
+            FilterService filterService
         ) =>
         {
             // Auth guard
@@ -147,31 +120,62 @@ public static class ApiEndpoints
                 return;
             }
 
-            // Extract signer info from form
-
-            if (!form.TryGetProperty("email", out var signerEmailProp) ||
-                !form.TryGetProperty("firstNames", out var signerFirstNamesProp) ||
-                !form.TryGetProperty("lastName", out var signerLastNameProp))
+            // Extract info from form
+            if (!form.TryGetProperty("generalContractorEmail", out var generalContractorEmailProp) ||
+                !form.TryGetProperty("generalContractorFirstNames", out var generalContractorFirstNamesProp) ||
+                !form.TryGetProperty("generalContractorLastName", out var generalContractorLastNameProp))
             {
                 Console.WriteLine("❌ Missing signer information");
                 response.StatusCode = 400;
-                await response.WriteAsJsonAsync(new { error = "Missing email, firstNames or lastName" });
+                await response.WriteAsJsonAsync(new { error = "Missing manager details" });
                 return;
             }
 
-            var signerEmail = signerEmailProp.GetString();
-            var signerFirstNames = signerFirstNamesProp.GetString();
-            var signerLastName = signerLastNameProp.GetString();
+            if (!form.TryGetProperty("subContractorEmail", out var subContractorEmailProp) ||
+                !form.TryGetProperty("subContractorFirstNames", out var subContractorFirstNamesProp) ||
+                !form.TryGetProperty("subContractorLastName", out var subContractorLastNameProp))
+            {
+                Console.WriteLine("❌ Missing signer information");
+                response.StatusCode = 400;
+                await response.WriteAsJsonAsync(new { error = "Missing recipient email, first names or last name" });
+                return;
+            }
+
+            var generalContractor = new BasicUserInfo
+            {
+                FirstNames = subContractorFirstNamesProp.GetString() ?? "",
+                LastName = subContractorLastNameProp.GetString() ?? "",
+                Email = subContractorEmailProp.GetString() ?? ""
+            };
+            if (
+                (generalContractor.Email == "") || 
+                (generalContractor.FirstNames == "") || 
+                (generalContractor.LastName == ""))
+            {
+                response.StatusCode = 400;
+                await response.WriteAsJsonAsync(new { error = "Manager email and full name are required" });
+                return;
+            }
+
+            var subContractor = new BasicUserInfo
+            {
+                FirstNames = subContractorFirstNamesProp.GetString() ?? "",
+                LastName = subContractorLastNameProp.GetString() ?? "",
+                Email = subContractorEmailProp.GetString() ?? ""
+            };
+            if (
+                (subContractor.Email == "") || 
+                (subContractor.FirstNames == "") || 
+                (subContractor.LastName == ""))
+            {
+                response.StatusCode = 400;
+                await response.WriteAsJsonAsync(new { error = "Recipient email and full name are required" });
+                return;
+            }
             var customMessage = form.TryGetProperty("customMessage", out var msgProp)
                 ? msgProp.GetString()
                 : null;
 
-            if (string.IsNullOrWhiteSpace(signerEmail) || string.IsNullOrWhiteSpace(signerFirstNames) || string.IsNullOrWhiteSpace(signerLastName))
-            {
-                response.StatusCode = 400;
-                await response.WriteAsJsonAsync(new { error = "Signer email and full name are required" });
-                return;
-            }
 
             // Extract Procore context
             if (!context.TryGetProperty("company_id", out var companyIdProp) ||
@@ -198,7 +202,7 @@ public static class ApiEndpoints
 
             Console.WriteLine("📥 /api/send received");
             Console.WriteLine($"Company: {companyId}, Project: {projectId}, Commitment: {commitmentId}");
-            Console.WriteLine($"Signer: {signerFirstNames} {signerLastName} ({signerEmail})");
+            Console.WriteLine(new {generalContractor, subContractor});
 
             // Export PDF from Procore
             var (pdfBytes, exportError) = await procoreService.ExportCommitmentPdfAsync(
@@ -229,9 +233,9 @@ public static class ApiEndpoints
                 pdfBytes!,
                 metadata,
                 documentName,
-                signerEmail,
-                signerFirstNames,
-                signerLastName,
+                generalContractor,
+                subContractor,
+                filterService.GetDashboardDataAsync().Result.Viewers,
                 customMessage ?? ""
             );
 

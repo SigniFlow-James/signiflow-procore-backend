@@ -29,27 +29,40 @@ public class ProcoreService
     // Get Procore Users
     // ------------------------------------------------------------
 
-    public async Task<List<ProcoreUserRecipient>> GetProcoreUsersAsync(
+    public async Task<List<ProcoreRecipient>> GetProcoreUsersAsync(
         string companyId,
-        string projectId 
+        string? projectId = null
     )
     {
         try
         {
-            var response = await _procoreClient.SendAsync(
+            HttpResponseMessage response;
+            if (projectId == null)
+            {
+                response = await _procoreClient.SendAsync(
+                HttpMethod.Get,
+                "1.3",
+                _oauthSession.Procore.AccessToken,
+                $"companies/{companyId}/users",
+                companyId
+            );}
+            else
+            {
+                response = await _procoreClient.SendAsync(
                 HttpMethod.Get,
                 "1.0",
                 _oauthSession.Procore.AccessToken,
                 $"projects/{projectId}/users",
                 companyId
             );
-
+            }
+            
             response.EnsureSuccessStatusCode();
 
             var json = await response.Content.ReadAsStringAsync();
             var users = JsonSerializer.Deserialize<List<ProcoreUser>>(json)
                            ?? [];
-            var recipients = users.Select(user => new ProcoreUserRecipient
+            var recipients = users.Select(user => new ProcoreRecipient
             {
                 EmployeeId = user.EmployeeId,
                 EmailAddress = user.EmailAddress,
@@ -72,36 +85,30 @@ public class ProcoreService
     // Get Procore Vendors
     // ------------------------------------------------------------
 
-    public async Task<List<ProcoreVendorRecipient>> GetProcoreVendorsAsync(
-        string companyId,
-        string projectId 
+    public async Task<List<ProcoreCompany>> GetCompaniesAsync(
     )
     {
         try
         {
             var response = await _procoreClient.SendAsync(
                 HttpMethod.Get,
-                "1.1",
+                "1.0",
                 _oauthSession.Procore.AccessToken,
-                $"projects/{projectId}/vendors",
-                companyId
+                $"companies"
             );
 
             response.EnsureSuccessStatusCode();
 
             var json = await response.Content.ReadAsStringAsync();
-            var users = JsonSerializer.Deserialize<List<ProcoreVendor>>(json)
+            var users = JsonSerializer.Deserialize<List<RawProcoreCompany>>(json)
                            ?? [];
-            var recipients = users.Select(user => new ProcoreVendorRecipient
+            var companies = users.Select(user => new ProcoreCompany
             {
-                VendorId = user.BusinessId,
-                VendorName = user.Name,
-                EmailAddress = user.PrimaryContact.EmailAddress ?? user.EmailAddress,
-                PrimaryContactFirstName = user.PrimaryContact.FirstName,
-                PrimaryContactLastName = user.PrimaryContact.LastName
+                Id = user.Id,
+                Name = user.Name
             }).ToList();
 
-            return recipients;
+            return companies;
         }
         catch (Exception ex)
         {

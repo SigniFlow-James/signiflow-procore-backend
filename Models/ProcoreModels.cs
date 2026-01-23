@@ -157,7 +157,7 @@ public class PermissionTemplate
     public required string Type { get; set; }
 }
 
-public class ProcoreUserRecipient
+public class ProcoreRecipient
 {
     [JsonPropertyName("employee_id")]
     public required string EmployeeId { get; set; }
@@ -179,214 +179,34 @@ public class ProcoreUserRecipient
 /// Procore Vendor Model
 /// </summary>
 
-public class ProcoreVendor
+public class RawProcoreCompany
 {
     [JsonPropertyName("id")]
     public int Id { get; set; }
 
     [JsonPropertyName("name")]
     public required string Name { get; set; }
-
-    [JsonPropertyName("abbreviated_name")]
-    public required string AbbreviatedName { get; set; }
-
-    [JsonPropertyName("address")]
-    public required string Address { get; set; }
-
-    [JsonPropertyName("attachments")]
-    public required List<Attachment> Attachments { get; set; }
-
-    [JsonPropertyName("authorized_bidder")]
-    public bool AuthorizedBidder { get; set; }
-
-    [JsonPropertyName("business_id")]
-    public required string BusinessId { get; set; }
-
-    [JsonPropertyName("business_phone")]
-    public required string BusinessPhone { get; set; }
-
-    [JsonPropertyName("business_register")]
-    public required BusinessRegister BusinessRegister { get; set; }
-
-    [JsonPropertyName("city")]
-    public required string City { get; set; }
-
-    [JsonPropertyName("company")]
-    public required string Company { get; set; }
-
-    [JsonPropertyName("company_vendor")]
-    public bool CompanyVendor { get; set; }
-
-    [JsonPropertyName("country_code")]
-    public required string CountryCode { get; set; }
-
-    [JsonPropertyName("created_at")]
-    public DateTime CreatedAt { get; set; }
-
-    [JsonPropertyName("email_address")]
-    public required string EmailAddress { get; set; }
-
-    [JsonPropertyName("fax_number")]
-    public required string FaxNumber { get; set; }
 
     [JsonPropertyName("is_active")]
     public bool IsActive { get; set; }
 
-    [JsonPropertyName("is_connected")]
-    public bool IsConnected { get; set; }
+    [JsonPropertyName("logo_url")]
+    public required string LogoUrl { get; set; }
 
-    [JsonPropertyName("labor_union")]
-    public required string LaborUnion { get; set; }
+    [JsonPropertyName("pcn_business_experience")]
+    public bool PcnBusinessExperience { get; set; }
 
-    [JsonPropertyName("license_number")]
-    public required string LicenseNumber { get; set; }
-
-    [JsonPropertyName("logo")]
-    public required string Logo { get; set; }
-
-    [JsonPropertyName("mobile_phone")]
-    public required string MobilePhone { get; set; }
-
-    [JsonPropertyName("non_union_prevailing_wage")]
-    public bool NonUnionPrevailingWage { get; set; }
-
-    [JsonPropertyName("notes")]
-    public required string Notes { get; set; }
-
-    [JsonPropertyName("origin_code")]
-    public required string OriginCode { get; set; }
-
-    [JsonPropertyName("origin_data")]
-    public required string OriginData { get; set; }
-
-    [JsonPropertyName("origin_id")]
-    public required string OriginId { get; set; }
-
-    [JsonPropertyName("prequalified")]
-    public bool Prequalified { get; set; }
-
-    [JsonPropertyName("primary_contact")]
-    public required PrimaryContact PrimaryContact { get; set; }
-
-    [JsonPropertyName("project_ids")]
-    public required List<int> ProjectIds { get; set; }
-
-    [JsonPropertyName("state_code")]
-    public required string StateCode { get; set; }
-
-    [JsonPropertyName("synced_to_erp")]
-    public bool SyncedToErp { get; set; }
-
-    [JsonPropertyName("trade_name")]
-    public required string TradeName { get; set; }
-
-    [JsonPropertyName("union_member")]
-    public bool UnionMember { get; set; }
-
-    [JsonPropertyName("updated_at")]
-    public DateTime UpdatedAt { get; set; }
-
-    [JsonPropertyName("vendor_group")]
-    public required VendorGroup VendorGroup { get; set; }
-
-    [JsonPropertyName("website")]
-    public required string Website { get; set; }
-
-    [JsonPropertyName("zip")]
-    public required string Zip { get; set; }
+    [JsonPropertyName("my_company")]
+    public bool MyCompany { get; set; }
 }
 
-public class Attachment
-{
-    [JsonPropertyName("id")]
-    public int Id { get; set; }
-
-    [JsonPropertyName("url")]
-    public required string Url { get; set; }
-
-    [JsonPropertyName("name")]
-    public required string Name { get; set; }
-
-    [JsonPropertyName("filename")]
-    public required string Filename { get; set; }
-}
-
-public class BusinessRegister
-{
-    [JsonPropertyName("id")]
-    public int Id { get; set; }
-
-    [JsonPropertyName("type")]
-    public required string Type { get; set; }
-
-    [JsonPropertyName("identifier")]
-    public required string Identifier { get; set; }
-
-    [JsonPropertyName("verified_at")]
-    public DateTime? VerifiedAt { get; set; }
-
-    [JsonPropertyName("verification_status")]
-    public required string VerificationStatus { get; set; }
-}
-
-public class PrimaryContact
-{
-    [JsonPropertyName("id")]
-    public int Id { get; set; }
-
-    [JsonPropertyName("first_name")]
-    public required string FirstName { get; set; }
-
-    [JsonPropertyName("last_name")]
-    public required string LastName { get; set; }
-
-    [JsonPropertyName("business_phone")]
-    public required string BusinessPhone { get; set; }
-
-    [JsonPropertyName("business_phone_extension")]
-    public int? BusinessPhoneExtension { get; set; }
-
-    [JsonPropertyName("fax_number")]
-    public required string FaxNumber { get; set; }
-
-    [JsonPropertyName("mobile_phone")]
-    public required string MobilePhone { get; set; }
-
-    [JsonPropertyName("email_address")]
-    public required string EmailAddress { get; set; }
-
-    [JsonPropertyName("created_at")]
-    public DateTime CreatedAt { get; set; }
-
-    [JsonPropertyName("updated_at")]
-    public DateTime UpdatedAt { get; set; }
-}
-
-public class VendorGroup
+public class ProcoreCompany
 {
     [JsonPropertyName("id")]
     public int Id { get; set; }
 
     [JsonPropertyName("name")]
     public required string Name { get; set; }
-}
-
-public class ProcoreVendorRecipient
-{
-    [JsonPropertyName("vendor_id")]
-    public required string VendorId { get; set; }
-
-    [JsonPropertyName("vendor_name")]
-    public required string VendorName { get; set; }
-
-    [JsonPropertyName("primary_contact_first_name")]
-    public required string PrimaryContactFirstName { get; set; }
-
-    [JsonPropertyName("primary_contact_last_name")]
-    public required string PrimaryContactLastName { get; set; }
-
-    [JsonPropertyName("email_address")]
-    public required string EmailAddress { get; set; }
 }
 
 /// <summary>
