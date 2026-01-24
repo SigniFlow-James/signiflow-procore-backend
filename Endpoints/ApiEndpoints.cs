@@ -42,7 +42,7 @@ public static class ApiEndpoints
             HttpResponse response,
             ProcoreService procoreService,
             AuthService authService,
-            FilterService filterService
+            AdminService adminService
         ) =>
         {
             Console.WriteLine("📥 /api/recipients received");
@@ -73,7 +73,7 @@ public static class ApiEndpoints
             // Fetch recipients
 
             var users = await procoreService.GetProcoreUsersAsync(companyId, projectId);
-            var filteredUsers = filterService.FilterUsers(users, companyId, projectId);
+            var filteredUsers = adminService.FilterUsers(users, companyId, projectId);
 
             response.StatusCode = 200;
             await response.WriteAsJsonAsync(filteredUsers);
@@ -87,7 +87,7 @@ public static class ApiEndpoints
             AuthService authService,
             ProcoreService procoreService,
             SigniflowService signiflowService,
-            FilterService filterService
+            AdminService adminService
         ) =>
         {
             // Auth guard
@@ -235,7 +235,7 @@ public static class ApiEndpoints
                 documentName,
                 generalContractor,
                 subContractor,
-                filterService.GetDashboardDataAsync().Result.Viewers,
+                adminService.GetDashboardDataAsync().Result.Viewers,
                 customMessage ?? ""
             );
 

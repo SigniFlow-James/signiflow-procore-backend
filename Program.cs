@@ -39,7 +39,7 @@ builder.Services.AddRouting();
 builder.Services.AddSingleton<OAuthSession>();
 builder.Services.AddSingleton<AuthService>();
 builder.Services.AddSingleton<ISigniflowWebhookQueue, SigniflowWebhookQueue>();
-builder.Services.AddSingleton<FilterService>();
+builder.Services.AddSingleton<AdminService>();
 builder.Services.AddScoped<SigniflowWebhookProcessor>();
 builder.Services.AddHostedService<SigniflowWebhookWorker>();
 

@@ -69,17 +69,32 @@ public static class AdminEndpoints
             }
         });
 
+        app.MapGet("/admin/companies", async (
+            HttpRequest request,
+            HttpResponse response,
+            ProcoreService procoreService
+        ) =>
+        {
+            Console.WriteLine("📥 /admin/companies received");
+            var companies = await procoreService.GetCompaniesAsync();
+            response.StatusCode = 200;
+            await response.WriteAsJsonAsync(new
+            {
+                companies
+            });
+        });
+
         // Get dashboard data (filters and viewers)
         app.MapGet("/admin/dashboard", async (
             HttpResponse response,
-            FilterService filterService
+            AdminService adminService
         ) =>
         {
             Console.WriteLine("📥 /admin/dashboard GET received");
 
             try
             {
-                var data = await filterService.GetDashboardDataAsync();
+                var data = await adminService.GetDashboardDataAsync();
                 
                 response.StatusCode = 200;
                 await response.WriteAsJsonAsync(new
@@ -100,7 +115,7 @@ public static class AdminEndpoints
         app.MapPost("/admin/filters", async (
             HttpRequest request,
             HttpResponse response,
-            FilterService filterService
+            AdminService adminService
         ) =>
         {
             Console.WriteLine("📥 /admin/filters POST received");
@@ -135,7 +150,7 @@ public static class AdminEndpoints
                     throw new Exception("Failed to deserialize filter items");
                 }
 
-                await filterService.SaveFiltersAsync(filters);
+                await adminService.SaveFiltersAsync(filters);
 
                 Console.WriteLine($"✅ Filters saved: {filters.Count} filters");
                 response.StatusCode = 200;
@@ -157,7 +172,7 @@ public static class AdminEndpoints
         app.MapPost("/admin/viewers", async (
             HttpRequest request,
             HttpResponse response,
-            FilterService filterService
+            AdminService adminService
         ) =>
         {
             Console.WriteLine("📥 /admin/viewers POST received");
@@ -192,7 +207,7 @@ public static class AdminEndpoints
                     throw new Exception("Failed to deserialize viewer items");
                 }
 
-                await filterService.SaveViewersAsync(viewers);
+                await adminService.SaveViewersAsync(viewers);
 
                 Console.WriteLine($"✅ Viewers saved: {viewers.Count} viewers");
                 response.StatusCode = 200;
@@ -221,6 +236,12 @@ public static class AdminEndpoints
             try
             {
                 var company = response.Headers["x-procore-company-id"].ToString();
+                if (string.IsNullOrEmpty(company))
+                {
+                    response.StatusCode = 400;
+                    await response.WriteAsJsonAsync(new { error = "Missing Company ID header" });
+                    return;
+                }
                 var companies = await procoreService.GetProcoreUsersAsync(company);
                 
                 response.StatusCode = 200;

@@ -4,11 +4,11 @@
 using System.Text.Json;
 using Procore.APIClasses;
 
-public class FilterService
+public class AdminService
 {
     private readonly string _dataFilePath;
 
-    public FilterService()
+    public AdminService()
     {
         // Store filters and viewers in a single JSON file
         var appDirectory = AppContext.BaseDirectory;
