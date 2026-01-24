@@ -168,6 +168,10 @@ public class ProcoreApiClient
         endpoint = $"rest/v{targetVersion}/{endpoint}";
         // Start export
         var request = new HttpRequestMessage(method, endpoint);
+        if (accessToken == null)
+        {
+            throw new InvalidOperationException("Access token is null");   
+        }
         request.Headers.Authorization =
             new AuthenticationHeaderValue("Bearer", accessToken);
         if (companyId != null)
@@ -180,6 +184,7 @@ public class ProcoreApiClient
             request.Content = new StringContent(json, Encoding.UTF8, "application/json");
         }
         Console.WriteLine($"📍 Posting to: {_http.BaseAddress}{endpoint}");
+        Console.WriteLine(JsonSerializer.Serialize(request));
         var response = await _http.SendAsync(request);
         return response;
     }

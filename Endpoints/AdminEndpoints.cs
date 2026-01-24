@@ -36,7 +36,8 @@ public static class AdminEndpoints
             {
                 Console.WriteLine("❌ Missing username or password");
                 response.StatusCode = 400;
-                await response.WriteAsJsonAsync(new {
+                await response.WriteAsJsonAsync(new
+                {
                     success = false,
                     message = "Username or password is missing",
                 });
@@ -62,7 +63,8 @@ public static class AdminEndpoints
             {
                 Console.WriteLine("❌ Invalid credentials");
                 response.StatusCode = 401;
-                await response.WriteAsJsonAsync(new {
+                await response.WriteAsJsonAsync(new
+                {
                     success = false,
                     message = "Username or password is incorrect",
                 });
@@ -75,13 +77,23 @@ public static class AdminEndpoints
             ProcoreService procoreService
         ) =>
         {
-            Console.WriteLine("📥 /admin/companies received");
-            var companies = await procoreService.GetCompaniesAsync();
-            response.StatusCode = 200;
-            await response.WriteAsJsonAsync(new
+
+            try
             {
-                companies
-            });
+                Console.WriteLine("📥 /admin/companies received");
+                var companies = await procoreService.GetCompaniesAsync();
+                response.StatusCode = 200;
+                await response.WriteAsJsonAsync(new
+                {
+                    companies
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Error loading company data: {ex.Message}");
+                response.StatusCode = 500;
+                await response.WriteAsJsonAsync(new { error = "Failed to load company data" });
+            }
         });
 
         // Get dashboard data (filters and viewers)
@@ -95,7 +107,7 @@ public static class AdminEndpoints
             try
             {
                 var data = await adminService.GetDashboardDataAsync();
-                
+
                 response.StatusCode = 200;
                 await response.WriteAsJsonAsync(new
                 {
@@ -243,7 +255,7 @@ public static class AdminEndpoints
                     return;
                 }
                 var companies = await procoreService.GetProcoreUsersAsync(company);
-                
+
                 response.StatusCode = 200;
                 await response.WriteAsJsonAsync(new
                 {

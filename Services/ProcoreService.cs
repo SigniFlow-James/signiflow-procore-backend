@@ -112,7 +112,7 @@ public class ProcoreService
         }
         catch (Exception ex)
         {
-            Console.WriteLine("❌ Error fetching Procore managers:");
+            Console.WriteLine("❌ Error fetching Procore companies:");
             Console.WriteLine(ex);
             return [];
         }
