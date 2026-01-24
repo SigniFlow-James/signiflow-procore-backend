@@ -69,10 +69,6 @@ public class SigniflowService
                 SLAField = 0,
                 UseAutoTagsField = false,
                 CustomMessageField = customMessage,
-                FlattenDocumentField = false,
-                KeepContentSecurityField = false,
-                KeepCustomPropertiesField = false,
-                KeepXMPMetadataField = false,
 
                 AdditionalDataField = JsonSerializer.Serialize(metaData),
 
