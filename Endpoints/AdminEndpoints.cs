@@ -264,9 +264,9 @@ public static class AdminEndpoints
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ Error loading companies: {ex.Message}");
+                Console.WriteLine($"❌ Error loading users: {ex.Message}");
                 response.StatusCode = 500;
-                await response.WriteAsJsonAsync(new { error = "Failed to load companies" });
+                await response.WriteAsJsonAsync(new { error = "Failed to load users" });
             }
         });
     }
