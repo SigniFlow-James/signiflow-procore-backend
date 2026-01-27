@@ -239,6 +239,7 @@ public static class AdminEndpoints
 
         // Get user info
         app.MapGet("/admin/users", async (
+            HttpRequest request,
             HttpResponse response,
             ProcoreService procoreService
         ) =>
@@ -247,7 +248,7 @@ public static class AdminEndpoints
 
             try
             {
-                var company = response.Headers["company-id"].ToString();
+                var company = request.Headers["company-id"].ToString();
                 if (string.IsNullOrEmpty(company))
                 {
                     response.StatusCode = 400;
