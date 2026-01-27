@@ -194,7 +194,7 @@ public class RawProcoreCompany
     public required string LogoUrl { get; set; }
 
     [JsonPropertyName("pcn_business_experience")]
-    public bool PcnBusinessExperience { get; set; }
+    public bool? PcnBusinessExperience { get; set; }
 
     [JsonPropertyName("my_company")]
     public bool MyCompany { get; set; }
