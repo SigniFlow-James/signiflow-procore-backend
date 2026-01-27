@@ -247,7 +247,7 @@ public static class AdminEndpoints
 
             try
             {
-                var company = response.Headers["x-procore-company-id"].ToString();
+                var company = response.Headers["company-id"].ToString();
                 if (string.IsNullOrEmpty(company))
                 {
                     response.StatusCode = 400;
