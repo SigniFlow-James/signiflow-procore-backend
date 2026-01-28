@@ -25,7 +25,7 @@ public class ProcoreUser
     public required string Avatar { get; set; }
 
     [JsonPropertyName("business_id")]
-    public Guid BusinessId { get; set; }
+    public required string BusinessId { get; set; }
 
     [JsonPropertyName("business_phone")]
     public required string BusinessPhone { get; set; }

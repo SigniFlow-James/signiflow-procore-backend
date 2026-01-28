@@ -137,7 +137,7 @@ public static class OAuthEndpoints
         // Auth refresh
         // ------------------------------------------------------------
 
-        app.MapPost("/api/oauth/refresh", async (
+        app.MapPost("/oauth/refresh", async (
             HttpResponse response,
             AuthService authService,
             OAuthSession oauthSession
@@ -157,7 +157,7 @@ public static class OAuthEndpoints
         // Auth status
         // ------------------------------------------------------------
         
-        app.MapGet("/api/oauth/status", (AuthService authService, OAuthSession oauthSession) =>
+        app.MapGet("/oauth/status", (AuthService authService, OAuthSession oauthSession) =>
         {
             return Results.Json(GenerateOAuthFullInfo(
                 authService,

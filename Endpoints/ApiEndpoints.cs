@@ -12,31 +12,7 @@ public static class ApiEndpoints
 {
     public static void MapApiEndpoints(this WebApplication app)
     {
-        app.MapGet("/api/test", async (ProcoreService procoreService) =>
-        {
-            try
-            {
-                var patch = new CommitmentContractPatch
-                {
-                    Status = new ProcoreEnums.WorkflowStatus().AwaitingSignature,
-                };
-                // Update status on procore
-                await procoreService.PatchCommitmentAsync(
-                    "112291",
-                    "310481",
-                    "4279506",
-                    patch
-                );
-
-                Results.Ok("OK");
-            }
-            catch
-            {
-                Results.BadRequest("FAIL");
-            }
-        }
-        );
-
+        // Fetch recipients from Procore
         app.MapGet("/api/recipients", async (
             HttpRequest request,
             HttpResponse response,

@@ -37,7 +37,7 @@ public class ProcoreService
         try
         {
             HttpResponseMessage response;
-            if (projectId == null)
+            if (string.IsNullOrEmpty(projectId))
             {
                 response = await _procoreClient.SendAsync(
                 HttpMethod.Get,

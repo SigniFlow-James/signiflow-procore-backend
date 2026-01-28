@@ -249,13 +249,14 @@ public static class AdminEndpoints
             try
             {
                 var company = request.Headers["company-id"].ToString();
+                var project = request.Headers["project-id"].ToString();
                 if (string.IsNullOrEmpty(company))
                 {
                     response.StatusCode = 400;
                     await response.WriteAsJsonAsync(new { error = "Missing Company ID header" });
                     return;
                 }
-                var companies = await procoreService.GetProcoreUsersAsync(company);
+                var companies = await procoreService.GetProcoreUsersAsync(company, project);
 
                 response.StatusCode = 200;
                 await response.WriteAsJsonAsync(new
