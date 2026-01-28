@@ -128,7 +128,7 @@ public class AdminService
                 {
                     bool match = filter.Type switch
                     {
-                        (int)UserFilterTypeEnum.EmployeeId => user.EmployeeId.ToString() == filter.Value?.ToString(),
+                        (int)UserFilterTypeEnum.EmployeeId => user.EmployeeId?.ToString() == filter.Value?.ToString(),
                         (int)UserFilterTypeEnum.JobTitle => user.JobTitle == filter.Value?.ToString(),
                         (int)UserFilterTypeEnum.FirstName => user.FirstName == filter.Value?.ToString(),
                         (int)UserFilterTypeEnum.LastName => user.LastName == filter.Value?.ToString(),
@@ -166,7 +166,7 @@ public class AdminService
 
         var recipientSigners = filteredUsers.Select(u => new Recipient
         {
-            UserId = u.EmployeeId.ToString(),
+            UserId = u.EmployeeId?.ToString(),
             FirstNames = u.FirstName,
             LastName = u.LastName,
             Email = u.EmailAddress
