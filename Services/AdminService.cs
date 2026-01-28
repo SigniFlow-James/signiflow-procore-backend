@@ -1,5 +1,5 @@
 // ============================================================
-// FILE: Services/FilterService.cs
+// FILE: Services/AdminService.cs
 // ============================================================
 using System.Text.Json;
 using Procore.APIClasses;
@@ -164,11 +164,6 @@ public class AdminService
             });
         }
 
-        var viewers = dashboardData.Viewers.Where(v => 
-            v.CompanyId == companyId && 
-            (v.ProjectId == null || v.ProjectId == projectId)
-        ).ToList();
-
         var recipientSigners = filteredUsers.Select(u => new Recipient
         {
             UserId = u.EmployeeId.ToString(),
@@ -180,14 +175,26 @@ public class AdminService
         return recipientSigners;
     }
 
-    public List<Recipient> GetViewers(string companyId, string? projectId = null)
+    /// <summary>
+    /// Get viewers for a contract, optionally filtered by region
+    /// </summary>
+    /// <param name="companyId">The company ID</param>
+    /// <param name="projectId">The project ID (null for all projects)</param>
+    /// <param name="region">Optional region filter (e.g., "NSW", "VIC")</param>
+    /// <returns>List of recipients who should be viewers</returns>
+    public List<Recipient> GetViewers(
+        string companyId, 
+        string? projectId = null, 
+        string? region = null)
     {
         // This will be called when sending a contract to get the configured viewers
         var data = GetDashboardDataAsync().Result;
         
+        // Filter viewers by company, project, and optionally region
         var applicableViewers = data.Viewers.Where(v => 
             v.CompanyId == companyId && 
-            (v.ProjectId == null || v.ProjectId == projectId)
+            (v.ProjectId == null || v.ProjectId == projectId) &&
+            (region == null || v.Region == null || v.Region == region) // Include if no region filter, viewer has no region, or regions match
         ).ToList();
 
         var recipients = new List<Recipient>();
@@ -219,8 +226,26 @@ public class AdminService
 
         return recipients;
     }
+
+    /// <summary>
+    /// Get all viewers grouped by region for reporting/debugging
+    /// </summary>
+    public async Task<Dictionary<string, List<ViewerItem>>> GetViewersByRegionAsync(string companyId)
+    {
+        var data = await GetDashboardDataAsync();
+        var companyViewers = data.Viewers.Where(v => v.CompanyId == companyId).ToList();
+        
+        var groupedByRegion = companyViewers
+            .GroupBy(v => v.Region ?? "No Region")
+            .ToDictionary(
+                g => g.Key,
+                g => g.ToList()
+            );
+
+        return groupedByRegion;
+    }
 }
 
 // ============================================================
-// END FILE: Services/FilterService.cs
+// END FILE: Services/AdminService.cs
 // ============================================================

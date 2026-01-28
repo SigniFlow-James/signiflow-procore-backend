@@ -26,12 +26,13 @@ public class FilterItem
 public class ViewerItem
 {
     public string? CompanyId { get; set; }
-    public string? ProjectId { get; set; }
-    public string Type { get; set; } = "manual"; // "manual" or "procore"
+    public string? ProjectId { get; set; }  // null means all projects
+    public string Type { get; set; } = "procore"; // "manual" or "procore" - default changed to "procore"
     public string? UserId { get; set; } // For Procore users
-    public string? FirstNames { get; set; } // For manual entry
+    public string? FirstNames { get; set; } // For manual entry (note: kept as FirstNames for backward compatibility)
     public string? LastName { get; set; } // For manual entry
     public string? Email { get; set; } // For manual entry
+    public string? Region { get; set; } // Australian state/territory: NSW, VIC, QLD, SA, WA, TAS, NT, ACT
 }
 
 public class Recipient
@@ -49,6 +50,19 @@ public enum UserFilterTypeEnum
     FirstName = 2,
     LastName = 3,
     EmailAddress = 4
+}
+
+// Australian regions enum for type safety (optional)
+public enum AustralianRegion
+{
+    NSW,  // New South Wales
+    VIC,  // Victoria
+    QLD,  // Queensland
+    SA,   // South Australia
+    WA,   // Western Australia
+    TAS,  // Tasmania
+    NT,   // Northern Territory
+    ACT   // Australian Capital Territory
 }
 
 // ============================================================
