@@ -136,10 +136,10 @@ public class VendorFromUser
     public bool IsConnected { get; set; }
 
     [JsonPropertyName("origin_id")]
-    public required string OriginId { get; set; }
+    public string OriginId { get; set; } = default!;
 
     [JsonPropertyName("business_register_id")]
-    public required string BusinessRegisterId { get; set; }
+    public string BusinessRegisterId { get; set; } = default!;
 }
 
 public class PermissionTemplate
