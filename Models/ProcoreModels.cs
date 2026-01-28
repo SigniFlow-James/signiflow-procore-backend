@@ -250,7 +250,7 @@ public class ProjectAddress
     public required string StateCode { get; set; }
 
     [JsonPropertyName("zip")]
-    public int Zip { get; set; }
+    public required string Zip { get; set; }
 
     [JsonPropertyName("country_code")]
     public required string CountryCode { get; set; }

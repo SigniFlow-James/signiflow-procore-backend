@@ -150,7 +150,7 @@ public class ProcoreService
         }
         catch (Exception ex)
         {
-            Console.WriteLine("❌ Error fetching Procore companies:");
+            Console.WriteLine("❌ Error fetching Procore projects:");
             Console.WriteLine(ex);
             return [];
         }
