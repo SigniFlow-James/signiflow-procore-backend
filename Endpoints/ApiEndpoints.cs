@@ -32,8 +32,8 @@ public static class ApiEndpoints
             }
 
             // Read query parameters
-            var companyId = request.Query["company_id"].ToString();
-            var projectId = request.Query["project_id"].ToString();
+            var companyId = request.Headers["company-id"].ToString();
+            var projectId = request.Headers["project-id"].ToString();
 
             if (string.IsNullOrWhiteSpace(companyId) || string.IsNullOrWhiteSpace(projectId))
             {
