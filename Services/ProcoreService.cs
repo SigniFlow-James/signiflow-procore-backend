@@ -82,7 +82,7 @@ public class ProcoreService
     }
 
     // ------------------------------------------------------------
-    // Get Procore Vendors
+    // Get Procore Companies
     // ------------------------------------------------------------
 
     public async Task<List<ProcoreCompany>> GetCompaniesAsync(
@@ -100,15 +100,53 @@ public class ProcoreService
             response.EnsureSuccessStatusCode();
 
             var json = await response.Content.ReadAsStringAsync();
-            var users = JsonSerializer.Deserialize<List<RawProcoreCompany>>(json)
+            var res = JsonSerializer.Deserialize<List<RawProcoreCompany>>(json)
                            ?? [];
-            var companies = users.Select(user => new ProcoreCompany
+            var companies = res.Select(user => new ProcoreCompany
             {
                 Id = user.Id,
                 Name = user.Name
             }).ToList();
 
             return companies;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("❌ Error fetching Procore companies:");
+            Console.WriteLine(ex);
+            return [];
+        }
+    }
+
+    // ------------------------------------------------------------
+    // Get Procore Projects
+    // ------------------------------------------------------------
+
+    public async Task<List<ProcoreProject>> GetProjectsAsync(
+        string companyId
+    )
+    {
+        try
+        {
+            var response = await _procoreClient.SendAsync(
+                HttpMethod.Get,
+                "1.0",
+                _oauthSession.Procore.AccessToken,
+                $"companies/{companyId}/projects"
+            );
+
+            response.EnsureSuccessStatusCode();
+
+            var json = await response.Content.ReadAsStringAsync();
+            var res = JsonSerializer.Deserialize<List<RawProcoreProject>>(json)
+                           ?? [];
+            var projects = res.Select(user => new ProcoreProject
+            {
+                Id = user.Id,
+                Name = user.Name
+            }).ToList();
+
+            return projects;
         }
         catch (Exception ex)
         {

@@ -209,6 +209,86 @@ public class ProcoreCompany
     public required string Name { get; set; }
 }
 
+// Projects
+public class RawProcoreProject
+{
+    [JsonPropertyName("id")]
+    public int Id { get; set; }
+
+    [JsonPropertyName("name")]
+    public required string Name { get; set; }
+
+    [JsonPropertyName("address")]
+    public required ProjectAddress Address { get; set; }
+
+    [JsonPropertyName("stage_name")]
+    public required string StageName { get; set; }
+
+    [JsonPropertyName("status_name")]
+    public required string StatusName { get; set; }
+
+    [JsonPropertyName("type_name")]
+    public required string TypeName { get; set; }
+
+    [JsonPropertyName("open_items")]
+    public required List<OpenItem> OpenItems { get; set; }
+
+    [JsonPropertyName("created_by")]
+    public required ProjectCreatedBy CreatedBy { get; set; }
+}
+
+// Sub classes for nested objects
+public class ProjectAddress
+{
+    [JsonPropertyName("street")]
+    public required string Street { get; set; }
+
+    [JsonPropertyName("city")]
+    public required string City { get; set; }
+
+    [JsonPropertyName("state_code")]
+    public required string StateCode { get; set; }
+
+    [JsonPropertyName("zip")]
+    public int Zip { get; set; }
+
+    [JsonPropertyName("country_code")]
+    public required string CountryCode { get; set; }
+}
+
+public class OpenItem
+{
+    [JsonPropertyName("id")]
+    public int Id { get; set; }
+
+    [JsonPropertyName("details")]
+    public required string Details { get; set; }
+
+    [JsonPropertyName("host")]
+    public required string Host { get; set; }
+
+    [JsonPropertyName("url")]
+    public required string Url { get; set; }
+}
+
+public class ProjectCreatedBy
+{
+    [JsonPropertyName("id")]
+    public int Id { get; set; }
+
+    [JsonPropertyName("email")]
+    public required string Email { get; set; }
+}
+
+public class ProcoreProject
+{
+    [JsonPropertyName("id")]
+    public int Id { get; set; }
+
+    [JsonPropertyName("name")]
+    public required string Name { get; set; }
+}
+
 /// <summary>
 /// Commitment Metadata Model
 /// </summary>

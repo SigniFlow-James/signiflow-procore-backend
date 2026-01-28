@@ -96,6 +96,32 @@ public static class AdminEndpoints
             }
         });
 
+        app.MapGet("/admin/projects", async (
+            HttpRequest request,
+            HttpResponse response,
+            ProcoreService procoreService
+        ) =>
+        {
+
+            try
+            {
+                Console.WriteLine("📥 /admin/projects received");
+                var companyID = request.Headers["company-id"].ToString();
+                var projects = await procoreService.GetProjectsAsync(companyID);
+                response.StatusCode = 200;
+                await response.WriteAsJsonAsync(new
+                {
+                    projects
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Error loading project data: {ex.Message}");
+                response.StatusCode = 500;
+                await response.WriteAsJsonAsync(new { error = "Failed to load project data" });
+            }
+        });
+
         // Get dashboard data (filters and viewers)
         app.MapGet("/admin/dashboard", async (
             HttpResponse response,
