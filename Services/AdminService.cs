@@ -172,6 +172,7 @@ public class AdminService
             Email = u.EmailAddress
         }).ToList();
 
+        Console.WriteLine($"🔍 Filtered users: {recipientSigners.Count} out of {users.Count}, after applying {filters.Count} filters");
         return recipientSigners;
     }
 
