@@ -250,6 +250,7 @@ app.MapPost("/admin/viewers", async (
         var validRegions = new HashSet<string> { "NSW", "VIC", "QLD", "SA", "WA", "TAS", "NT", "ACT" };
         foreach (var viewer in viewers)
         {
+            Console.WriteLine($"🔍 Validating viewer: {JsonSerializer.Serialize(viewer)}");
             if (!string.IsNullOrEmpty(viewer.Region) && !validRegions.Contains(viewer.Region))
             {
                 Console.WriteLine($"❌ Invalid region: {viewer.Region}");
