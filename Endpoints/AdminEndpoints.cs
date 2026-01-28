@@ -109,6 +109,7 @@ public static class AdminEndpoints
                 var companyID = request.Headers["company-id"].ToString();
                 var projects = await procoreService.GetProjectsAsync(companyID);
                 response.StatusCode = 200;
+                Console.WriteLine($"✅ Returning {projects.Count} projects for company {companyID}");
                 await response.WriteAsJsonAsync(new
                 {
                     projects
