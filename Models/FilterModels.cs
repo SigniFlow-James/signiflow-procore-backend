@@ -28,15 +28,13 @@ public class ViewerItem
     public string? CompanyId { get; set; }
     public string? ProjectId { get; set; }  // null means all projects
     public string Type { get; set; } = "procore"; // "manual" or "procore" - default changed to "procore"
-    public string? UserId { get; set; } // For Procore users
-    public string? FirstNames { get; set; } // For manual entry (note: kept as FirstNames for backward compatibility)
-    public string? LastName { get; set; } // For manual entry
-    public string? Email { get; set; } // For manual entry
+    public Recipient? Recipient { get; set; } // For Procore users
     public string? Region { get; set; } // Australian state/territory: NSW, VIC, QLD, SA, WA, TAS, NT, ACT
 }
 
 public class Recipient
 {
+    
     public string? UserId { get; set; } // For Procore users
     public string FirstNames { get; set; } = "";
     public string LastName { get; set; } = "";

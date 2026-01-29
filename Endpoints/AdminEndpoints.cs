@@ -272,12 +272,23 @@ app.MapPost("/admin/viewers", async (
                 return;
             }
 
+            var user = viewer.Recipient;
+            if (user == null)   
+            {
+                Console.WriteLine("❌ Missing recipient information");
+                response.StatusCode = 400;
+                await response.WriteAsJsonAsync(new { 
+                    error = "Recipient information is required" 
+                });
+                return;
+            }
+
             // Validate required fields based on type
             if (viewer.Type == "manual")
             {
-                if (string.IsNullOrWhiteSpace(viewer.FirstNames) || 
-                    string.IsNullOrWhiteSpace(viewer.LastName) || 
-                    string.IsNullOrWhiteSpace(viewer.Email))
+                if (string.IsNullOrWhiteSpace(user.FirstNames) || 
+                    string.IsNullOrWhiteSpace(user.LastName) || 
+                    string.IsNullOrWhiteSpace(user.Email))
                 {
                     Console.WriteLine("❌ Manual viewer missing required fields");
                     response.StatusCode = 400;
@@ -289,7 +300,10 @@ app.MapPost("/admin/viewers", async (
             }
             else if (viewer.Type == "procore")
             {
-                if (string.IsNullOrWhiteSpace(viewer.UserId))
+                if (string.IsNullOrWhiteSpace(user.UserId) ||
+                    string.IsNullOrWhiteSpace(user.FirstNames) || 
+                    string.IsNullOrWhiteSpace(user.LastName) || 
+                    string.IsNullOrWhiteSpace(user.Email))
                 {
                     Console.WriteLine("❌ Procore viewer missing UserId");
                     response.StatusCode = 400;
