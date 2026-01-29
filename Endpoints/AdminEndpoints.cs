@@ -248,6 +248,7 @@ app.MapPost("/admin/viewers", async (
 
         // Validate region values if provided
         var validRegions = new HashSet<string> { "NSW", "VIC", "QLD", "SA", "WA", "TAS", "NT", "ACT" };
+        var validViewers = new List<ViewerItem>();
         foreach (var viewer in viewers)
         {
             Console.WriteLine($"🔍 Validating viewer: {JsonSerializer.Serialize(viewer)}");
@@ -258,7 +259,7 @@ app.MapPost("/admin/viewers", async (
                 await response.WriteAsJsonAsync(new { 
                     error = $"Invalid region '{viewer.Region}'. Must be one of: NSW, VIC, QLD, SA, WA, TAS, NT, ACT" 
                 });
-                return;
+                continue;
             }
 
             // Validate viewer type
@@ -269,7 +270,7 @@ app.MapPost("/admin/viewers", async (
                 await response.WriteAsJsonAsync(new { 
                     error = $"Invalid viewer type '{viewer.Type}'. Must be 'manual' or 'procore'" 
                 });
-                return;
+                continue;
             }
 
             var user = viewer.Recipient;
@@ -280,7 +281,7 @@ app.MapPost("/admin/viewers", async (
                 await response.WriteAsJsonAsync(new { 
                     error = "Recipient information is required" 
                 });
-                return;
+                continue;
             }
 
             // Validate required fields based on type
@@ -295,7 +296,7 @@ app.MapPost("/admin/viewers", async (
                     await response.WriteAsJsonAsync(new { 
                         error = "Manual viewers require FirstNames, LastName, and Email" 
                     });
-                    return;
+                    continue;
                 }
             }
             else if (viewer.Type == "procore")
@@ -310,35 +311,44 @@ app.MapPost("/admin/viewers", async (
                     await response.WriteAsJsonAsync(new { 
                         error = "Procore viewers require UserId" 
                     });
-                    return;
+                    continue;
                 }
             }
+            validViewers.Add(viewer);
         }
 
-        await adminService.SaveViewersAsync(viewers);
+        if (validViewers.Count == 0)
+        {
+            Console.WriteLine("❌ No valid viewers to save");
+            response.StatusCode = 400;
+            await response.WriteAsJsonAsync(new { error = "Error validating viewers" });
+            return;
+        }
+
+        await adminService.SaveViewersAsync(validViewers);
 
         // Log summary
-        var regionCounts = viewers
+        var regionCounts = validViewers
             .GroupBy(v => v.Region ?? "No Region")
             .Select(g => $"{g.Key}: {g.Count()}")
             .ToList();
         
-        Console.WriteLine($"✅ Viewers saved: {viewers.Count} total viewers");
+        Console.WriteLine($"✅ Viewers saved: {validViewers.Count} total viewers");
         Console.WriteLine($"   By region: {string.Join(", ", regionCounts)}");
-        Console.WriteLine($"   All projects: {viewers.Count(v => v.ProjectId == null)}");
-        Console.WriteLine($"   Specific projects: {viewers.Count(v => v.ProjectId != null)}");
+        Console.WriteLine($"   All projects: {validViewers.Count(v => v.ProjectId == null)}");
+        Console.WriteLine($"   Specific projects: {validViewers.Count(v => v.ProjectId != null)}");
 
         response.StatusCode = 200;
         await response.WriteAsJsonAsync(new
         {
             success = true,
-            message = "Viewers saved successfully",
+            message = viewers.Count == validViewers.Count ? "Viewers saved successfully" : $"Unable to save {viewers.Count - validViewers.Count} invalid viewer(s)",
             summary = new
             {
-                total = viewers.Count,
-                allProjects = viewers.Count(v => v.ProjectId == null),
-                specificProjects = viewers.Count(v => v.ProjectId != null),
-                byRegion = viewers.GroupBy(v => v.Region ?? "No Region")
+                total = validViewers.Count,
+                allProjects = validViewers.Count(v => v.ProjectId == null),
+                specificProjects = validViewers.Count(v => v.ProjectId != null),
+                byRegion = validViewers.GroupBy(v => v.Region ?? "No Region")
                     .ToDictionary(g => g.Key, g => g.Count())
             }
         });
