@@ -202,27 +202,7 @@ public class AdminService
 
         foreach (var viewer in applicableViewers)
         {
-            if (viewer.Type == "manual")
-            {
-                recipients.Add(new Recipient
-                {
-                    FirstNames = viewer.FirstNames ?? "",
-                    LastName = viewer.LastName ?? "",
-                    Email = viewer.Email ?? ""
-                });
-            }
-            else if (viewer.Type == "procore" && viewer.UserId != null)
-            {
-                // Note: You'll need to fetch the actual user details from Procore
-                // This is a placeholder - implement actual user lookup
-                recipients.Add(new Recipient
-                {
-                    UserId = viewer.UserId,
-                    FirstNames = "", // Fetch from Procore
-                    LastName = "",  // Fetch from Procore
-                    Email = ""      // Fetch from Procore
-                });
-            }
+            recipients.Add(viewer.Recipient!);
         }
 
         return recipients;

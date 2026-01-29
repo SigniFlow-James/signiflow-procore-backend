@@ -96,7 +96,7 @@ public class SigniflowService
             List<WorkflowUserInfo> workflowViewers = [];
             foreach (ViewerItem viewer in viewers) 
             {
-                var workflowViewer = GenerateWorkflowViewerInfo(viewer);
+                var workflowViewer = GenerateWorkflowViewerInfo(viewer.Recipient!);
                 if (workflowViewer == null) continue;
                 workflowViewers.Add(workflowViewer);
             }
@@ -182,7 +182,7 @@ public class SigniflowService
     }
 
     public WorkflowUserInfo? GenerateWorkflowViewerInfo(
-        ViewerItem info
+        Recipient info
         )
     {
         var first = info.FirstNames ?? "";
