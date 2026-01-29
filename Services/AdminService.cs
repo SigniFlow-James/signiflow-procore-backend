@@ -15,12 +15,14 @@ public class AdminService
         _dataFilePath = Path.Combine(appDirectory, "admin_data.json");
     }
 
-    public async Task<Dictionary <string, AdminDashboardData>> GetDashboardDataAsync()
+    public async Task<Dictionary<string, AdminDashboardData>> GetDashboardDataAsync()
     {
+        var empty = new Dictionary<string, AdminDashboardData>
+            {
+                { "all", new AdminDashboardData() }
+            };
         if (!File.Exists(_dataFilePath))
         {
-            var empty = new Dictionary<string, AdminDashboardData>();
-
             await File.WriteAllTextAsync(
                 _dataFilePath,
                 JsonSerializer.Serialize(empty)
@@ -33,30 +35,41 @@ public class AdminService
 
         if (string.IsNullOrWhiteSpace(json))
         {
-            return [];
+            return empty;
         }
 
         try
         {
             return JsonSerializer.Deserialize<Dictionary<string, AdminDashboardData>>(json)
-                ?? [];
+                ?? empty;
         }
         catch (JsonException ex)
         {
             Console.WriteLine($"⚠️ Invalid JSON in data file: {ex.Message}");
 
-            return [];
+            return empty;
         }
+    }
+
+    public async Task<List<ViewerItem>> GetAllViewersAsync(string CompanyId)
+    {
+        var data = await GetDashboardDataAsync();
+        var viewers = data.ContainsKey("all") ? data["all"].Viewers : [];
+        if (data.ContainsKey(CompanyId))
+        {
+            viewers.AddRange(data[CompanyId].Viewers);
+        }
+        return viewers;
     }
 
     public async Task SaveFiltersAsync(string CompanyId, List<FilterItem> filters)
     {
-        await SaveDashboardDataAsync(CompanyId, filters:filters);
+        await SaveDashboardDataAsync(CompanyId, filters: filters);
     }
 
     public async Task SaveViewersAsync(string CompanyId, List<ViewerItem> viewers)
     {
-        await SaveDashboardDataAsync(CompanyId, viewers:viewers);
+        await SaveDashboardDataAsync(CompanyId, viewers: viewers);
     }
 
     public async Task SaveDashboardDataAsync(string CompanyId, List<ViewerItem>? viewers = null, List<FilterItem>? filters = null)
@@ -84,14 +97,19 @@ public class AdminService
     }
 
     public List<Recipient> FilterUsers(
-        List<ProcoreRecipient> users, 
+        List<ProcoreRecipient> users,
         string companyId,
         string? projectId = null)
     {
         var dashboardData = GetDashboardDataAsync().Result;
-        if (!dashboardData.ContainsKey(companyId))
+        var filters = dashboardData.ContainsKey("all") ? dashboardData["all"].Filters : [];
+        if (dashboardData.TryGetValue(companyId, out AdminDashboardData? value))
         {
-            Console.WriteLine($"⚠️ No dashboard data found for company {companyId}. Returning all users.");
+            filters.AddRange(value.Filters);
+        }
+        if (filters.Count == 0)
+        {
+            Console.WriteLine("ℹ️ No filters configured, returning all users");
             return users.Select(u => new Recipient
             {
                 UserId = u.EmployeeId?.ToString(),
@@ -100,9 +118,8 @@ public class AdminService
                 Email = u.EmailAddress
             }).ToList();
         }
-        var filters = dashboardData[companyId].Filters;
         // Apply filters based on project context
-        var applicableFilters = filters.Where(f => 
+        var applicableFilters = filters.Where(f =>
             f.CompanyId == companyId &&
             (
             f.ProjectId == null || // Company-wide filters
@@ -183,8 +200,8 @@ public class AdminService
     /// <param name="region">Optional region filter (e.g., "NSW", "VIC")</param>
     /// <returns>List of recipients who should be viewers</returns>
     public List<Recipient> GetViewers(
-        string companyId, 
-        string? projectId = null, 
+        string companyId,
+        string? projectId = null,
         string? region = null)
     {
         // This will be called when sending a contract to get the configured viewers
@@ -195,8 +212,8 @@ public class AdminService
             return [];
         }
         // Filter viewers by company, project, and optionally region
-        var applicableViewers = dashboardData[companyId].Viewers.Where(v => 
-            v.CompanyId == companyId && 
+        var applicableViewers = dashboardData[companyId].Viewers.Where(v =>
+            v.CompanyId == companyId &&
             (v.ProjectId == null || v.ProjectId == projectId) &&
             (region == null || v.Region == null || v.Region == region) // Include if no specified region filter, viewer has no region, or regions match
         ).ToList();

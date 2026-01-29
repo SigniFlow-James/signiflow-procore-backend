@@ -351,11 +351,11 @@ public static class AdminEndpoints
                     validViewers.Add(viewer);
                 }
 
-                if (validViewers.Count == 0)
+                if (viewers.Count > 0 && validViewers.Count == 0)
                 {
                     Console.WriteLine("❌ No valid viewers to save");
                     response.StatusCode = 400;
-                    await response.WriteAsJsonAsync(new { error = "Error validating viewers" });
+                    await response.WriteAsJsonAsync(new { error = $"Unable to save {viewers.Count} invalid viewer(s)" });
                     return;
                 }
 
@@ -376,7 +376,7 @@ public static class AdminEndpoints
                 await response.WriteAsJsonAsync(new
                 {
                     success = true,
-                    message = viewers.Count == validViewers.Count ? "Viewers saved successfully" : $"Unable to save {viewers.Count - validViewers.Count} invalid viewer(s)",
+                    message = viewers.Count == validViewers.Count ? $"{validViewers.Count} Viewer(s) saved successfully" : $"{validViewers.Count} Viewer(s) saved successfully; Unable to save {viewers.Count - validViewers.Count} invalid viewer(s)",
                     summary = new
                     {
                         total = validViewers.Count,

@@ -1,13 +1,8 @@
 // ============================================================
-// FILE: Models/FilterModels.cs
+// FILE: Models/AdminModels.cs
 // ============================================================
 
 using System.Text.Json.Serialization;
-
-public class StoredDataStructure
-{
-    public List<string> Companies { get; set; } = new();
-}
 
 public class AdminDashboardData
 {
@@ -89,5 +84,5 @@ public enum AustralianRegion
 }
 
 // ============================================================
-// END FILE: Models/FilterModels.cs
+// END FILE: Models/AdminModels.cs
 // ============================================================
