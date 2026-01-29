@@ -20,7 +20,8 @@ builder.Services.AddCors(options =>
     {
         policy.WithOrigins(
                 "https://signiflow-james.github.io",
-                "https://sandbox.procore.com"
+                "https://sandbox.procore.com",
+                "http://localhost:3000"
             )
             .AllowAnyHeader()
             .AllowAnyMethod()
