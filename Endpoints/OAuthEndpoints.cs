@@ -7,6 +7,9 @@ using Microsoft.AspNetCore.Server.Kestrel.Core;
 
 public static class OAuthEndpoints
 {
+    private readonly static string FRONTEND_URL = AppConfig.FrontendUrl
+        ?? throw new InvalidOperationException("FRONTEND_URL environment variable not configured");
+        
     private static OAuthFullInfo GenerateOAuthFullInfo(
         AuthService authService,
         OAuthSession oauthSession,
@@ -90,13 +93,16 @@ public static class OAuthEndpoints
         // OAuth callback
         // ------------------------------------------------------------
 
-        app.MapGet("/oauth/callback", async (HttpRequest request, AuthService authService) =>
+        app.MapGet("/oauth/callback", async (HttpRequest request, HttpResponse response, AuthService authService) =>
         {
             var code = request.Query["code"].ToString();
 
             if (string.IsNullOrEmpty(code))
             {
-                return Results.BadRequest("Missing code");
+                Console.WriteLine("❌ No authorization code received");
+                response.StatusCode = 400;
+                response.Redirect($"{FRONTEND_URL}/oauth-callback?success=false&error=No authorization code received");
+                return;
             }
 
             Console.WriteLine("OAuth callback received");
@@ -108,10 +114,8 @@ public static class OAuthEndpoints
             if (!success)
             {
                 Console.WriteLine("❌ Procore token exchange failed: " + error);
-                return Results.Content(@"
-                    <h2>OAuth Failure</h2>
-                    <p>Procore was unable to authenticate you.</p>
-                    ", "text/html");
+                response.Redirect($"{FRONTEND_URL}/oauth-callback?success=false&error=Procore was unable to authenticate you");
+                return;
             }
 
             // Signiflow Login
@@ -120,16 +124,12 @@ public static class OAuthEndpoints
             if (!success)
             {
                 Console.WriteLine("❌ Signiflow authentication failed: " + error);
-                return Results.Content(@"
-                    <h2>OAuth Failure</h2>
-                    <p>Signiflow was unable to authenticate you.</p>
-                    ", "text/html");
+                Console.WriteLine("❌ Procore token exchange failed: " + error);
+                response.Redirect($"{FRONTEND_URL}/oauth-callback?success=false&error=Signiflow was unable to authenticate you");
+                return;
             }
-
-            return Results.Content(@"
-                <h2>OAuth success</h2>
-                <p>You can close this window and return to Procore.</p>
-                ", "text/html");
+            Console.WriteLine("✅ OAuth flow completed successfully");
+            response.Redirect($"{FRONTEND_URL}/oauth-callback?success=true");
         });
 
 
@@ -156,7 +156,7 @@ public static class OAuthEndpoints
         // ------------------------------------------------------------
         // Auth status
         // ------------------------------------------------------------
-        
+
         app.MapGet("/oauth/status", (AuthService authService, OAuthSession oauthSession) =>
         {
             return Results.Json(GenerateOAuthFullInfo(
