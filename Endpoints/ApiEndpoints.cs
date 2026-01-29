@@ -205,13 +205,17 @@ public static class ApiEndpoints
                 IntegrationType = "Procore"
             };
             var documentName = $"Procore_Commitment_{commitmentId}";
+            var dashboardData = adminService.GetDashboardDataAsync();
+            var viewers = dashboardData.Result.TryGetValue(companyId, out AdminDashboardData? value) 
+                ? value.Viewers : [];
+                
             var (workflowResponse, signiflowError) = await signiflowService.CreateWorkflowAsync(
                 pdfBytes!,
                 metadata,
                 documentName,
                 generalContractor,
                 subContractor,
-                adminService.GetDashboardDataAsync().Result.Viewers,
+                viewers,
                 customMessage ?? ""
             );
 

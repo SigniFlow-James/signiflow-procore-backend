@@ -15,15 +15,11 @@ public class AdminService
         _dataFilePath = Path.Combine(appDirectory, "admin_data.json");
     }
 
-    public async Task<AdminDashboardData> GetDashboardDataAsync()
+    public async Task<Dictionary <string, AdminDashboardData>> GetDashboardDataAsync()
     {
         if (!File.Exists(_dataFilePath))
         {
-            var empty = new AdminDashboardData
-            {
-                Filters = new List<FilterItem>(),
-                Viewers = new List<ViewerItem>()
-            };
+            var empty = new Dictionary<string, AdminDashboardData>();
 
             await File.WriteAllTextAsync(
                 _dataFilePath,
@@ -37,62 +33,54 @@ public class AdminService
 
         if (string.IsNullOrWhiteSpace(json))
         {
-            return new AdminDashboardData
-            {
-                Filters = new List<FilterItem>(),
-                Viewers = new List<ViewerItem>()
-            };
+            return [];
         }
 
         try
         {
-            return JsonSerializer.Deserialize<AdminDashboardData>(json)
-                ?? new AdminDashboardData
-                {
-                    Filters = new List<FilterItem>(),
-                    Viewers = new List<ViewerItem>()
-                };
+            return JsonSerializer.Deserialize<Dictionary<string, AdminDashboardData>>(json)
+                ?? [];
         }
         catch (JsonException ex)
         {
             Console.WriteLine($"⚠️ Invalid JSON in data file: {ex.Message}");
 
-            return new AdminDashboardData
-            {
-                Filters = new List<FilterItem>(),
-                Viewers = new List<ViewerItem>()
-            };
+            return [];
         }
     }
 
-    public async Task SaveFiltersAsync(List<FilterItem> filters)
+    public async Task SaveFiltersAsync(string CompanyId, List<FilterItem> filters)
     {
-        var currentData = await GetDashboardDataAsync();
-        currentData.Filters = filters;
-
-        var options = new JsonSerializerOptions
-        {
-            WriteIndented = true
-        };
-
-        var json = JsonSerializer.Serialize(currentData, options);
-        await File.WriteAllTextAsync(_dataFilePath, json); // todo: add threading protection to prevent multiple users accessing at once
-        Console.WriteLine($"💾 Filters saved to {_dataFilePath}");
+        await SaveDashboardDataAsync(CompanyId, filters:filters);
     }
 
-    public async Task SaveViewersAsync(List<ViewerItem> viewers)
+    public async Task SaveViewersAsync(string CompanyId, List<ViewerItem> viewers)
     {
-        var currentData = await GetDashboardDataAsync();
-        currentData.Viewers = viewers;
+        await SaveDashboardDataAsync(CompanyId, viewers:viewers);
+    }
 
+    public async Task SaveDashboardDataAsync(string CompanyId, List<ViewerItem>? viewers = null, List<FilterItem>? filters = null)
+    {
+        if (viewers == null && filters == null)
+        {
+            Console.WriteLine("⚠️ No data to save.");
+            return;
+        }
+        var saveData = await GetDashboardDataAsync();
+        if (!saveData.ContainsKey(CompanyId))
+        {
+            saveData[CompanyId] = new AdminDashboardData();
+        }
+        if (filters != null) saveData[CompanyId].Filters = filters;
+        if (viewers != null) saveData[CompanyId].Viewers = viewers;
         var options = new JsonSerializerOptions
         {
             WriteIndented = true
         };
 
-        var json = JsonSerializer.Serialize(currentData, options);
+        var json = JsonSerializer.Serialize(saveData, options);
         await File.WriteAllTextAsync(_dataFilePath, json);  // todo: add threading protection to prevent multiple users accessing at once
-        Console.WriteLine($"💾 Viewers saved to {_dataFilePath}");
+        Console.WriteLine($"💾 Dashboard data saved to {_dataFilePath}");
     }
 
     public List<Recipient> FilterUsers(
@@ -101,7 +89,18 @@ public class AdminService
         string? projectId = null)
     {
         var dashboardData = GetDashboardDataAsync().Result;
-        var filters = dashboardData.Filters;
+        if (!dashboardData.ContainsKey(companyId))
+        {
+            Console.WriteLine($"⚠️ No dashboard data found for company {companyId}. Returning all users.");
+            return users.Select(u => new Recipient
+            {
+                UserId = u.EmployeeId?.ToString(),
+                FirstNames = u.FirstName,
+                LastName = u.LastName,
+                Email = u.EmailAddress
+            }).ToList();
+        }
+        var filters = dashboardData[companyId].Filters;
         // Apply filters based on project context
         var applicableFilters = filters.Where(f => 
             f.CompanyId == companyId &&
@@ -189,13 +188,17 @@ public class AdminService
         string? region = null)
     {
         // This will be called when sending a contract to get the configured viewers
-        var data = GetDashboardDataAsync().Result;
-        
+        var dashboardData = GetDashboardDataAsync().Result;
+        if (!dashboardData.ContainsKey(companyId))
+        {
+            Console.WriteLine($"⚠️ No dashboard data found for company {companyId}. Returning all users.");
+            return [];
+        }
         // Filter viewers by company, project, and optionally region
-        var applicableViewers = data.Viewers.Where(v => 
+        var applicableViewers = dashboardData[companyId].Viewers.Where(v => 
             v.CompanyId == companyId && 
             (v.ProjectId == null || v.ProjectId == projectId) &&
-            (region == null || v.Region == null || v.Region == region) // Include if no region filter, viewer has no region, or regions match
+            (region == null || v.Region == null || v.Region == region) // Include if no specified region filter, viewer has no region, or regions match
         ).ToList();
 
         var recipients = new List<Recipient>();
@@ -214,8 +217,13 @@ public class AdminService
     public async Task<Dictionary<string, List<ViewerItem>>> GetViewersByRegionAsync(string companyId)
     {
         var data = await GetDashboardDataAsync();
-        var companyViewers = data.Viewers.Where(v => v.CompanyId == companyId).ToList();
-        
+        var dashboardData = GetDashboardDataAsync().Result;
+        if (!dashboardData.ContainsKey(companyId))
+        {
+            Console.WriteLine($"⚠️ No dashboard data found for company {companyId}. Returning all users.");
+            return [];
+        }
+        var companyViewers = dashboardData[companyId].Viewers.Where(v => v.CompanyId == companyId).ToList();
         var groupedByRegion = companyViewers
             .GroupBy(v => v.Region ?? "No Region")
             .ToDictionary(

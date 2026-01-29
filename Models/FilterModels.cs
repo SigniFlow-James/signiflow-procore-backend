@@ -4,16 +4,15 @@
 
 using System.Text.Json.Serialization;
 
+public class StoredDataStructure
+{
+    public List<string> Companies { get; set; } = new();
+}
+
 public class AdminDashboardData
 {
     public List<FilterItem> Filters { get; set; } = new();
     public List<ViewerItem> Viewers { get; set; } = new();
-}
-
-public class SidePanelDashboardData
-{
-    public List<Recipient> Signers { get; set; } = new();
-    public List<Recipient> Viewers { get; set; } = new();
 }
 
 public class FilterItem

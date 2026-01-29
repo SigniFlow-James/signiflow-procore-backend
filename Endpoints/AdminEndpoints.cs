@@ -125,22 +125,26 @@ public static class AdminEndpoints
 
         // Get dashboard data (filters and viewers)
         app.MapGet("/admin/dashboard", async (
+            HttpRequest request,
             HttpResponse response,
             AdminService adminService
         ) =>
         {
             Console.WriteLine("📥 /admin/dashboard GET received");
-
             try
             {
+                if (!request.Headers.TryGetValue("company-id", out var companyId) || string.IsNullOrEmpty(companyId))
+                {
+                    Console.WriteLine("❌ Missing Company ID header");
+                    response.StatusCode = 400;
+                    await response.WriteAsJsonAsync(new { error = "Missing Company ID header" });
+                    return;
+                }
                 var data = await adminService.GetDashboardDataAsync();
+                var dashboardData = data[companyId!];
 
                 response.StatusCode = 200;
-                await response.WriteAsJsonAsync(new
-                {
-                    filters = data.Filters,
-                    viewers = data.Viewers
-                });
+                await response.WriteAsJsonAsync(dashboardData);
             }
             catch (Exception ex)
             {
@@ -161,8 +165,17 @@ public static class AdminEndpoints
 
             // Parse body
             JsonElement body;
+            string? companyId;
             try
             {
+                companyId = request.Headers["company-id"].ToString();
+                if (string.IsNullOrEmpty(companyId))
+                {
+                    Console.WriteLine("❌ Missing Company ID header");
+                    response.StatusCode = 400;
+                    await response.WriteAsJsonAsync(new { error = "Missing Company ID header" });
+                    return;
+                }
                 body = await JsonSerializer.DeserializeAsync<JsonElement>(request.Body);
             }
             catch
@@ -189,7 +202,7 @@ public static class AdminEndpoints
                     throw new Exception("Failed to deserialize filter items");
                 }
 
-                await adminService.SaveFiltersAsync(filters);
+                await adminService.SaveFiltersAsync(companyId, filters);
 
                 Console.WriteLine($"✅ Filters saved: {filters.Count} filters");
                 response.StatusCode = 200;
@@ -208,159 +221,173 @@ public static class AdminEndpoints
         });
 
         // Save viewers endpoint with region support
-app.MapPost("/admin/viewers", async (
-    HttpRequest request,
-    HttpResponse response,
-    AdminService adminService
-) =>
-{
-    Console.WriteLine("📥 /admin/viewers POST received");
-
-    // Parse body
-    JsonElement body;
-    try
-    {
-        body = await JsonSerializer.DeserializeAsync<JsonElement>(request.Body);
-    }
-    catch
-    {
-        response.StatusCode = 400;
-        await response.WriteAsJsonAsync(new { error = "Invalid JSON body" });
-        return;
-    }
-
-    if (!body.TryGetProperty("viewers", out var viewersJson))
-    {
-        Console.WriteLine("❌ Missing viewers");
-        response.StatusCode = 400;
-        await response.WriteAsJsonAsync(new { error = "Missing viewers" });
-        return;
-    }
-
-    try
-    {
-        var viewers = JsonSerializer.Deserialize<List<ViewerItem>>(viewersJson.GetRawText());
-
-        if (viewers == null)
+        app.MapPost("/admin/viewers", async (
+            HttpRequest request,
+            HttpResponse response,
+            AdminService adminService
+        ) =>
         {
-            throw new Exception("Failed to deserialize viewer items");
-        }
+            Console.WriteLine("📥 /admin/viewers POST received");
 
-        // Validate region values if provided
-        var validRegions = new HashSet<string> { "NSW", "VIC", "QLD", "SA", "WA", "TAS", "NT", "ACT" };
-        var validViewers = new List<ViewerItem>();
-        foreach (var viewer in viewers)
-        {
-            Console.WriteLine($"🔍 Validating viewer: {JsonSerializer.Serialize(viewer)}");
-            if (!string.IsNullOrEmpty(viewer.Region) && !validRegions.Contains(viewer.Region))
+            // Parse body
+            JsonElement body;
+            string? companyId;
+            try
             {
-                Console.WriteLine($"❌ Invalid region: {viewer.Region}");
-                response.StatusCode = 400;
-                await response.WriteAsJsonAsync(new { 
-                    error = $"Invalid region '{viewer.Region}'. Must be one of: NSW, VIC, QLD, SA, WA, TAS, NT, ACT" 
-                });
-                continue;
-            }
-
-            // Validate viewer type
-            if (viewer.Type != "manual" && viewer.Type != "procore")
-            {
-                Console.WriteLine($"❌ Invalid viewer type: {viewer.Type}");
-                response.StatusCode = 400;
-                await response.WriteAsJsonAsync(new { 
-                    error = $"Invalid viewer type '{viewer.Type}'. Must be 'manual' or 'procore'" 
-                });
-                continue;
-            }
-
-            var user = viewer.Recipient;
-            if (user == null)   
-            {
-                Console.WriteLine("❌ Missing recipient information");
-                response.StatusCode = 400;
-                await response.WriteAsJsonAsync(new { 
-                    error = "Recipient information is required" 
-                });
-                continue;
-            }
-
-            // Validate required fields based on type
-            if (viewer.Type == "manual")
-            {
-                if (string.IsNullOrWhiteSpace(user.FirstNames) || 
-                    string.IsNullOrWhiteSpace(user.LastName) || 
-                    string.IsNullOrWhiteSpace(user.Email))
+                companyId = request.Headers["company-id"].ToString();
+                if (string.IsNullOrEmpty(companyId))
                 {
-                    Console.WriteLine("❌ Manual viewer missing required fields");
+                    Console.WriteLine("❌ Missing Company ID header");
                     response.StatusCode = 400;
-                    await response.WriteAsJsonAsync(new { 
-                        error = "Manual viewers require FirstNames, LastName, and Email" 
-                    });
-                    continue;
+                    await response.WriteAsJsonAsync(new { error = "Missing Company ID header" });
+                    return;
                 }
+                body = await JsonSerializer.DeserializeAsync<JsonElement>(request.Body);
             }
-            else if (viewer.Type == "procore")
+            catch
             {
-                if (string.IsNullOrWhiteSpace(user.UserId) ||
-                    string.IsNullOrWhiteSpace(user.FirstNames) || 
-                    string.IsNullOrWhiteSpace(user.LastName) || 
-                    string.IsNullOrWhiteSpace(user.Email))
+                response.StatusCode = 400;
+                await response.WriteAsJsonAsync(new { error = "Invalid JSON body" });
+                return;
+            }
+
+            if (!body.TryGetProperty("viewers", out var viewersJson))
+            {
+                Console.WriteLine("❌ Missing viewers");
+                response.StatusCode = 400;
+                await response.WriteAsJsonAsync(new { error = "Missing viewers" });
+                return;
+            }
+
+            try
+            {
+                var viewers = JsonSerializer.Deserialize<List<ViewerItem>>(viewersJson.GetRawText());
+
+                if (viewers == null)
                 {
-                    Console.WriteLine("❌ Procore viewer missing UserId");
-                    response.StatusCode = 400;
-                    await response.WriteAsJsonAsync(new { 
-                        error = "Procore viewers require UserId" 
-                    });
-                    continue;
+                    throw new Exception("Failed to deserialize viewer items");
                 }
+
+                // Validate region values if provided
+                var validRegions = new HashSet<string> { "NSW", "VIC", "QLD", "SA", "WA", "TAS", "NT", "ACT" };
+                var validViewers = new List<ViewerItem>();
+                foreach (var viewer in viewers)
+                {
+                    Console.WriteLine($"🔍 Validating viewer: {JsonSerializer.Serialize(viewer)}");
+                    if (!string.IsNullOrEmpty(viewer.Region) && !validRegions.Contains(viewer.Region))
+                    {
+                        Console.WriteLine($"❌ Invalid region: {viewer.Region}");
+                        response.StatusCode = 400;
+                        await response.WriteAsJsonAsync(new
+                        {
+                            error = $"Invalid region '{viewer.Region}'. Must be one of: NSW, VIC, QLD, SA, WA, TAS, NT, ACT"
+                        });
+                        continue;
+                    }
+
+                    // Validate viewer type
+                    if (viewer.Type != "manual" && viewer.Type != "procore")
+                    {
+                        Console.WriteLine($"❌ Invalid viewer type: {viewer.Type}");
+                        response.StatusCode = 400;
+                        await response.WriteAsJsonAsync(new
+                        {
+                            error = $"Invalid viewer type '{viewer.Type}'. Must be 'manual' or 'procore'"
+                        });
+                        continue;
+                    }
+
+                    var user = viewer.Recipient;
+                    if (user == null)
+                    {
+                        Console.WriteLine("❌ Missing recipient information");
+                        response.StatusCode = 400;
+                        await response.WriteAsJsonAsync(new
+                        {
+                            error = "Recipient information is required"
+                        });
+                        continue;
+                    }
+
+                    // Validate required fields based on type
+                    if (viewer.Type == "manual")
+                    {
+                        if (string.IsNullOrWhiteSpace(user.FirstNames) ||
+                            string.IsNullOrWhiteSpace(user.LastName) ||
+                            string.IsNullOrWhiteSpace(user.Email))
+                        {
+                            Console.WriteLine("❌ Manual viewer missing required fields");
+                            response.StatusCode = 400;
+                            await response.WriteAsJsonAsync(new
+                            {
+                                error = "Manual viewers require FirstNames, LastName, and Email"
+                            });
+                            continue;
+                        }
+                    }
+                    else if (viewer.Type == "procore")
+                    {
+                        if (string.IsNullOrWhiteSpace(user.UserId) ||
+                            string.IsNullOrWhiteSpace(user.FirstNames) ||
+                            string.IsNullOrWhiteSpace(user.LastName) ||
+                            string.IsNullOrWhiteSpace(user.Email))
+                        {
+                            Console.WriteLine("❌ Procore viewer missing UserId");
+                            response.StatusCode = 400;
+                            await response.WriteAsJsonAsync(new
+                            {
+                                error = "Procore viewers require UserId"
+                            });
+                            continue;
+                        }
+                    }
+                    validViewers.Add(viewer);
+                }
+
+                if (validViewers.Count == 0)
+                {
+                    Console.WriteLine("❌ No valid viewers to save");
+                    response.StatusCode = 400;
+                    await response.WriteAsJsonAsync(new { error = "Error validating viewers" });
+                    return;
+                }
+
+                await adminService.SaveViewersAsync(companyId, validViewers);
+
+                // Log summary
+                var regionCounts = validViewers
+                    .GroupBy(v => v.Region ?? "No Region")
+                    .Select(g => $"{g.Key}: {g.Count()}")
+                    .ToList();
+
+                Console.WriteLine($"✅ Viewers saved: {validViewers.Count} total viewers");
+                Console.WriteLine($"   By region: {string.Join(", ", regionCounts)}");
+                Console.WriteLine($"   All projects: {validViewers.Count(v => v.ProjectId == null)}");
+                Console.WriteLine($"   Specific projects: {validViewers.Count(v => v.ProjectId != null)}");
+
+                response.StatusCode = 200;
+                await response.WriteAsJsonAsync(new
+                {
+                    success = true,
+                    message = viewers.Count == validViewers.Count ? "Viewers saved successfully" : $"Unable to save {viewers.Count - validViewers.Count} invalid viewer(s)",
+                    summary = new
+                    {
+                        total = validViewers.Count,
+                        allProjects = validViewers.Count(v => v.ProjectId == null),
+                        specificProjects = validViewers.Count(v => v.ProjectId != null),
+                        byRegion = validViewers.GroupBy(v => v.Region ?? "No Region")
+                            .ToDictionary(g => g.Key, g => g.Count())
+                    }
+                });
             }
-            validViewers.Add(viewer);
-        }
-
-        if (validViewers.Count == 0)
-        {
-            Console.WriteLine("❌ No valid viewers to save");
-            response.StatusCode = 400;
-            await response.WriteAsJsonAsync(new { error = "Error validating viewers" });
-            return;
-        }
-
-        await adminService.SaveViewersAsync(validViewers);
-
-        // Log summary
-        var regionCounts = validViewers
-            .GroupBy(v => v.Region ?? "No Region")
-            .Select(g => $"{g.Key}: {g.Count()}")
-            .ToList();
-        
-        Console.WriteLine($"✅ Viewers saved: {validViewers.Count} total viewers");
-        Console.WriteLine($"   By region: {string.Join(", ", regionCounts)}");
-        Console.WriteLine($"   All projects: {validViewers.Count(v => v.ProjectId == null)}");
-        Console.WriteLine($"   Specific projects: {validViewers.Count(v => v.ProjectId != null)}");
-
-        response.StatusCode = 200;
-        await response.WriteAsJsonAsync(new
-        {
-            success = true,
-            message = viewers.Count == validViewers.Count ? "Viewers saved successfully" : $"Unable to save {viewers.Count - validViewers.Count} invalid viewer(s)",
-            summary = new
+            catch (Exception ex)
             {
-                total = validViewers.Count,
-                allProjects = validViewers.Count(v => v.ProjectId == null),
-                specificProjects = validViewers.Count(v => v.ProjectId != null),
-                byRegion = validViewers.GroupBy(v => v.Region ?? "No Region")
-                    .ToDictionary(g => g.Key, g => g.Count())
+                Console.WriteLine($"❌ Error saving viewers: {ex.Message}");
+                Console.WriteLine($"   Stack trace: {ex.StackTrace}");
+                response.StatusCode = 500;
+                await response.WriteAsJsonAsync(new { error = "Failed to save viewers" });
             }
         });
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"❌ Error saving viewers: {ex.Message}");
-        Console.WriteLine($"   Stack trace: {ex.StackTrace}");
-        response.StatusCode = 500;
-        await response.WriteAsJsonAsync(new { error = "Failed to save viewers" });
-    }
-});
 
         // Get user info
         app.MapGet("/admin/users", async (
@@ -378,7 +405,7 @@ app.MapPost("/admin/viewers", async (
                 if (string.IsNullOrEmpty(company))
                 {
                     response.StatusCode = 400;
-                    await response.WriteAsJsonAsync(new { error = "Missing Company ID header" });
+                    await response.WriteAsJsonAsync(new { error = "Missing Company or project ID header" });
                     return;
                 }
                 var users = await procoreService.GetProcoreUsersAsync(company, project);
