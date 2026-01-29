@@ -141,6 +141,13 @@ public static class AdminEndpoints
                     return;
                 }
                 var data = await adminService.GetDashboardDataAsync();
+                if (!data.ContainsKey(companyId!))
+                {
+                    Console.WriteLine($"⚠️ No dashboard data found for company {companyId}. Returning empty data.");
+                    response.StatusCode = 200;
+                    await response.WriteAsJsonAsync(new AdminDashboardData());
+                    return;
+                }
                 var dashboardData = data[companyId!];
 
                 response.StatusCode = 200;
