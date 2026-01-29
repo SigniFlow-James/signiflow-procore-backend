@@ -357,12 +357,12 @@ app.MapPost("/admin/viewers", async (
                     await response.WriteAsJsonAsync(new { error = "Missing Company ID header" });
                     return;
                 }
-                var companies = await procoreService.GetProcoreUsersAsync(company, project);
+                var users = await procoreService.GetProcoreUsersAsync(company, project);
 
                 response.StatusCode = 200;
                 await response.WriteAsJsonAsync(new
                 {
-                    value = companies
+                    value = users
                 });
             }
             catch (Exception ex)

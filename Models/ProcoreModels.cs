@@ -159,6 +159,9 @@ public class PermissionTemplate
 
 public class ProcoreRecipient
 {
+    [JsonPropertyName("id")]
+    public required string Id { get; set; }
+
     [JsonPropertyName("employee_id")]
     public required string EmployeeId { get; set; }
 
