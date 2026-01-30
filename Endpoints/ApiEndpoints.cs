@@ -180,7 +180,7 @@ public static class ApiEndpoints
             {
                 Console.WriteLine("❌ Missing General Contractor information");
                 response.StatusCode = 400;
-                await response.WriteAsJsonAsync(new { error = "Missing manager details" });
+                await response.WriteAsJsonAsync(new { error = "Missing general contractor details" });
                 return;
             }
             var generalContractor = JsonSerializer.Deserialize<BasicUserInfo>(generalContractorProp);
@@ -189,7 +189,7 @@ public static class ApiEndpoints
             {
                 Console.WriteLine("❌ Missing Sub Contractor information");
                 response.StatusCode = 400;
-                await response.WriteAsJsonAsync(new { error = "Missing sub-contractor email, first names or last name" });
+                await response.WriteAsJsonAsync(new { error = "Missing sub-contractor details" });
                 return;
             }
 

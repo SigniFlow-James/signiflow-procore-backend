@@ -48,8 +48,13 @@ public class DownloadResponse
 // Full Workflow Models
 public class BasicUserInfo
 {
+    [JsonPropertyName("firstNames")]
     public string FirstNames { get; set; } = "";
+
+    [JsonPropertyName("lirstName")]
     public string LastName{ get; set; } = "";
+    
+    [JsonPropertyName("email")]
     public string Email { get; set; } = "";
 }
 public class FullWorkflowRequest
