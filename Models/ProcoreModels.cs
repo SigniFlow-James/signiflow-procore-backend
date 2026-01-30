@@ -58,7 +58,7 @@ public class ProcoreUser
     public required string FirstName { get; set; }
 
     [JsonPropertyName("id")]
-    public int Id { get; set; }
+    public required string Id { get; set; }
 
     [JsonPropertyName("initials")]
     public required string Initials { get; set; }
@@ -127,7 +127,7 @@ public class ProcoreUser
 public class VendorFromUser
 {
     [JsonPropertyName("id")]
-    public int Id { get; set; }
+    public required string Id { get; set; }
 
     [JsonPropertyName("name")]
     public required string Name { get; set; }

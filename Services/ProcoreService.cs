@@ -60,11 +60,13 @@ public class ProcoreService
             response.EnsureSuccessStatusCode();
 
             var json = await response.Content.ReadAsStringAsync();
+            Console.WriteLine($"Procore Users JSON: {json}");
             var users = JsonSerializer.Deserialize<List<ProcoreUser>>(json)
                            ?? [];
+            
             var recipients = users.Select(user => new ProcoreRecipient
             {
-                Id = user.Id.ToString(),
+                Id = user.Id,
                 EmployeeId = user.EmployeeId,
                 EmailAddress = user.EmailAddress,
                 FirstName = user.FirstName,
