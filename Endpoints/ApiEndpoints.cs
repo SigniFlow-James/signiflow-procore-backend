@@ -29,6 +29,7 @@ public static class ApiEndpoints
             Console.WriteLine($"API init error: {error}");
             if (!success)
             {
+                Console.WriteLine("❌ Invalid context");
                 response.StatusCode = 401;
                 await response.WriteAsJsonAsync(new { error = "invalid context" });
                 return;
@@ -61,6 +62,7 @@ public static class ApiEndpoints
             var userTokenCheck = adminService.UserTokenCheck(request);
             if (userTokenCheck == null && adminTokenCheck == null)
             {
+                Console.WriteLine("❌ Invalid token");
                 response.StatusCode = 401;
                 await response.WriteAsJsonAsync(new { error = "invalid token" });
                 return;
@@ -69,6 +71,7 @@ public static class ApiEndpoints
             // Auth guard
             if (!await authService.CheckAuthResponseAsync(response))
             {
+                Console.WriteLine("❌ Invalid auth");
                 response.StatusCode = 401;
                 await response.WriteAsJsonAsync(new { error = "External Authentication failed, OAuth restart required." });
                 return;
@@ -126,6 +129,7 @@ public static class ApiEndpoints
             // Auth guard
             if (!await authService.CheckAuthResponseAsync(response))
             {
+                Console.WriteLine("❌ Invalid auth");
                 response.StatusCode = 401;
                 await response.WriteAsJsonAsync(new { error = "Authentication failed" });
                 return;

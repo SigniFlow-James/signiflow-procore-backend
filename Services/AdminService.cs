@@ -327,7 +327,7 @@ public class AdminService
             )
         ).ToList();
 
-        // First, collect all included users
+        // First, collect all included users. If a user passes at least one filter, they will be included
         var includedUsers = new List<ProcoreRecipient>();
         var includeFilters = applicableFilters.Where(f => f.Include == true).ToList();
 

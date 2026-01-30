@@ -31,6 +31,7 @@ public static class AdminEndpoints
             }
             catch
             {
+                Console.WriteLine("❌ Invalid body");
                 response.StatusCode = 400;
                 await response.WriteAsJsonAsync(new { error = "Invalid JSON body" });
                 return;
@@ -127,6 +128,7 @@ public static class AdminEndpoints
             var tokenCheck = adminService.AdminTokenCheck(request);
             if (tokenCheck == null)
             {
+                Console.WriteLine("❌ Invalid token");
                 response.StatusCode = 401;
                 await response.WriteAsJsonAsync(new { error = "invalid token" });
                 return;
@@ -164,6 +166,7 @@ public static class AdminEndpoints
             var tokenCheck = adminService.AdminTokenCheck(request);
             if (tokenCheck == null)
             {
+                Console.WriteLine("❌ Invalid token");
                 response.StatusCode = 401;
                 await response.WriteAsJsonAsync(new { error = "invalid token" });
                 return;
@@ -202,6 +205,7 @@ public static class AdminEndpoints
             var tokenCheck = adminService.AdminTokenCheck(request);
             if (tokenCheck == null)
             {
+                Console.WriteLine("❌ Invalid token");
                 response.StatusCode = 401;
                 await response.WriteAsJsonAsync(new { error = "invalid token" });
                 return;
@@ -262,6 +266,7 @@ public static class AdminEndpoints
             var tokenCheck = adminService.AdminTokenCheck(request);
             if (tokenCheck == null)
             {
+                Console.WriteLine("❌ Invalid token");
                 response.StatusCode = 401;
                 await response.WriteAsJsonAsync(new { error = "invalid token" });
                 return;
@@ -338,6 +343,7 @@ public static class AdminEndpoints
             var tokenCheck = adminService.AdminTokenCheck(request);
             if (tokenCheck == null)
             {
+                Console.WriteLine("❌ Invalid token");
                 response.StatusCode = 401;
                 await response.WriteAsJsonAsync(new { error = "invalid token" });
                 return;
@@ -497,6 +503,7 @@ public static class AdminEndpoints
             {
                 response.StatusCode = 401;
                 await response.WriteAsJsonAsync(new { error = "invalid token" });
+                return;
             }
 
             try
