@@ -190,15 +190,12 @@ public class ProcoreService
     // Export commitment PDF from Procore
     // ------------------------------------------------------------
 
-    public async Task<(byte[]? pdfBytes, string? error)> ExportCommitmentPdfAsync(
-        string companyId,
-        string projectId,
-        string commitmentId)
+    public async Task<(byte[]? pdfBytes, string? error)> ExportCommitmentPdfAsync(ProcoreContext context)
     {
         try
         {
             var exportUrl =
-                $"companies/{companyId}/projects/{projectId}/commitment_contracts/{commitmentId}/pdf";
+                $"companies/{context.CompanyId}/projects/{context.ProjectId}/commitment_contracts/{context.CommitmentId}/pdf";
 
             // Start export and pdg generation on procore side (POST)
             await _procoreClient.SendAsync(
@@ -206,7 +203,7 @@ public class ProcoreService
                 "2.0",
                 _oauthSession.Procore.AccessToken,
                 exportUrl,
-                companyId
+                context.CompanyId
                 );
 
             // Poll and wait for PDF to finish generation (GET)
@@ -218,14 +215,14 @@ public class ProcoreService
                 var getReq = new HttpRequestMessage(HttpMethod.Get, exportUrl);
                 getReq.Headers.Authorization =
                     new AuthenticationHeaderValue("Bearer", _oauthSession.Procore.AccessToken);
-                getReq.Headers.Add("Procore-Company-Id", companyId);
+                getReq.Headers.Add("Procore-Company-Id", context.CompanyId);
 
                 var exportResponse = await _procoreClient.SendAsync(
                     HttpMethod.Get,
                     "2.0",
                     _oauthSession.Procore.AccessToken,
                     exportUrl,
-                    companyId
+                    context.CompanyId
                     );
 
                 if (exportResponse.StatusCode == System.Net.HttpStatusCode.OK)
@@ -562,31 +559,27 @@ public class ProcoreService
     // ------------------------------------------------------------
 
     public async Task PatchCommitmentAsync(
-    string commitmentId,
-    string projectId,
-    string companyId,
+    ProcoreContext context,
     CommitmentContractPatch patch)
     {
-        await HandleCommitmentRequestAsync(commitmentId, projectId, companyId, HttpMethod.Patch, patch, true);
+        await HandleCommitmentRequestAsync(context, HttpMethod.Patch, patch, true);
     }
 
     private async Task HandleCommitmentRequestAsync(
-    string commitmentId,
-    string projectId,
-    string companyId,
+    ProcoreContext context,
     HttpMethod method,
     CommitmentContractPatch? patch,
     bool useJsonOptions)
     {
         try
         {
-            var endpoint = $"companies/{companyId}/projects/{projectId}/commitment_contracts/{commitmentId}";
+            var endpoint = $"companies/{context.CompanyId}/projects/{context.ProjectId}/commitment_contracts/{context.CommitmentId}";
             var response = await _procoreClient.SendAsync(
                 method,
                 "2.0",
                 _oauthSession.Procore.AccessToken,
                 endpoint,
-                companyId,
+                context.CompanyId,
                 patch,
                 useJsonOptions
                 );
@@ -596,7 +589,7 @@ public class ProcoreService
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error updating Procore commitment {commitmentId}, {ex}");
+            Console.WriteLine($"Error updating Procore commitment {context.CommitmentId}, {ex}");
             throw;
         }
     }

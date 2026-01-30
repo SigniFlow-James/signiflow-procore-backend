@@ -158,7 +158,7 @@ public class SigniflowWebhookEvent
     public string? AdditionalData { get; set; }
 
     [JsonPropertyName("AdditionalData")]
-    public Procore.APIClasses.CommitmentMetadata? Metadata { get; set; }
+    public Procore.APIClasses.ProcoreContext? Metadata { get; set; }
 
     [JsonPropertyName("DocumentUrl")]
     public string? DocumentUrl { get; set; }

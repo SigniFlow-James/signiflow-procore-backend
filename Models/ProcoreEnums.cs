@@ -18,7 +18,13 @@ public static class ProcoreEnums
         Yes = 1
     }
 
-    public class WorkflowStatus
+    public class ProcoreCommitmentType
+    {
+        public string SubContract = "work_order_contracts";
+        public string PurchaseOrder = "purchase_order_contracts";
+    }
+
+    public class SubcontractWorkflowStatus
     {
         public string Draft = "Draft";
         public string AwaitingBids = "Out For Bid";
@@ -27,6 +33,17 @@ public static class ProcoreEnums
         public string Complete = "Complete";
         public string Terminated = "Terminated";
         public string Void = "Void";
+    }
+
+    public class PurchaseOrderWorkflowStatus
+    {
+        public string Draft = "Draft";
+        public string Processing = "Processing";
+        public string Submitted = "Submitted";
+        public string PartiallyRecieved = "Partially Recieved";
+        public string Received = "Received";
+        public string Approved = "Approved";
+        public string Closed = "Closed";
     }
 
     public enum IDType

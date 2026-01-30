@@ -124,15 +124,15 @@ public class SigniflowWebhookProcessor
             // Associate upload to commitment
             var patch = new CommitmentContractPatch
             {
-                Status = new ProcoreEnums.WorkflowStatus().Approved,
+                Status = metadata.CommitmentType == new ProcoreEnums.ProcoreCommitmentType().SubContract ?
+                    new ProcoreEnums.SubcontractWorkflowStatus().Approved :
+                    new ProcoreEnums.PurchaseOrderWorkflowStatus().Approved,
                 ContractDate = DateOnly.FromDateTime(webhookEvent.CompletedDate),
                 UploadIds = [uploadUuid]
             };
 
             await _procoreService.PatchCommitmentAsync(
-                    metadata.CommitmentId,
-                    metadata.ProjectId,
-                    metadata.CompanyId,
+                    metadata,
                     patch
                 );
             Console.WriteLine($"Successfully updated Procore commitment {metadata.CommitmentId}");
@@ -149,14 +149,14 @@ public class SigniflowWebhookProcessor
                 }
                 var patch = new CommitmentContractPatch
                 {
-                    Status = new ProcoreEnums.WorkflowStatus().Approved,
+                    Status = metadata.CommitmentType == new ProcoreEnums.ProcoreCommitmentType().SubContract ?
+                        new ProcoreEnums.SubcontractWorkflowStatus().Approved :
+                        new ProcoreEnums.PurchaseOrderWorkflowStatus().Approved,
                     ContractDate = DateOnly.FromDateTime(webhookEvent.CompletedDate),
                 };
 
                 await _procoreService.PatchCommitmentAsync(
-                        metadata.CommitmentId,
-                        metadata.ProjectId,
-                        metadata.CompanyId,
+                        metadata,
                         patch
                     );
                 Console.WriteLine($"Updated Procore commitment {metadata.CommitmentId} with errors: {ex}");

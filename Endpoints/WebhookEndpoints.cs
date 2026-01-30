@@ -83,7 +83,7 @@ public static class WebhookEndpoints
                 var additionalDataJson = form["ADF"].ToString();
                 if (!string.IsNullOrWhiteSpace(additionalDataJson))
                 {
-                    webhookEvent.Metadata = JsonSerializer.Deserialize<Procore.APIClasses.CommitmentMetadata>(additionalDataJson);
+                    webhookEvent.Metadata = JsonSerializer.Deserialize<Procore.APIClasses.ProcoreContext>(additionalDataJson);
                 }
 
                 Console.WriteLine($"Received SigniFlow webhook: {webhookEvent.EventType}");

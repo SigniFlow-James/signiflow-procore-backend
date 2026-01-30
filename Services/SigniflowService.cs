@@ -35,7 +35,7 @@ public class SigniflowService
     // ------------------------------------------------------------
     public async Task<(FullWorkflowResponse? response, string? error)> CreateWorkflowAsync(
     byte[] pdfBytes,
-    Procore.APIClasses.CommitmentMetadata metaData,
+    Procore.APIClasses.ProcoreContext metaData,
     string documentName,
     BasicUserInfo signerOne,
     BasicUserInfo signerTwo,

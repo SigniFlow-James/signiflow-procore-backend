@@ -165,15 +165,13 @@ public static class ApiEndpoints
 
             Console.WriteLine($"📥 form: {body}");
             if (!body.TryGetProperty("form", out var form) ||
-                !body.TryGetProperty("context", out var context))
+                !body.TryGetProperty("context", out var contextProp))
             {
                 Console.WriteLine("❌ Missing form or context");
                 response.StatusCode = 400;
                 await response.WriteAsJsonAsync(new { error = "Missing form or context" });
                 return;
             }
-
-
 
             // Extract info from form
             if (!form.TryGetProperty("generalContractorSigner", out var generalContractorProp))
@@ -183,7 +181,7 @@ public static class ApiEndpoints
                 await response.WriteAsJsonAsync(new { error = "Missing general contractor details" });
                 return;
             }
-            
+
             var generalContractor = JsonSerializer.Deserialize<BasicUserInfo>(generalContractorProp);
 
             if (!form.TryGetProperty("subContractorSigner", out var subContractorProp))
@@ -223,37 +221,43 @@ public static class ApiEndpoints
 
 
             // Extract Procore context
-            if (!context.TryGetProperty("company_id", out var companyIdProp) ||
-                !context.TryGetProperty("project_id", out var projectIdProp) ||
-                !context.TryGetProperty("object_id", out var commitmentIdProp))
+            var context = JsonSerializer.Deserialize<ProcoreContext>(contextProp);
+            if (context == null ||
+                context.CompanyId == "" ||
+                context.ProjectId == "" ||
+                context.CommitmentId == "" || 
+                context.CommitmentType == "" )
             {
                 Console.WriteLine("❌ Invalid Procore context");
                 response.StatusCode = 400;
                 await response.WriteAsJsonAsync(new { error = "Invalid Procore context" });
                 return;
             }
-
-            var companyId = companyIdProp.GetString();
-            var projectId = projectIdProp.GetString();
-            var commitmentId = commitmentIdProp.GetString();
-
-            if (companyId == null || projectId == null || commitmentId == null)
+            var chunks = context.CommitmentType.Split('/');
+            if (chunks.FirstOrDefault(new ProcoreEnums.ProcoreCommitmentType().SubContract) != null)
             {
-                Console.WriteLine("❌ Missing Procore context IDs");
+                context.CommitmentType = new ProcoreEnums.ProcoreCommitmentType().SubContract;
+            }
+            else if (chunks.FirstOrDefault(new ProcoreEnums.ProcoreCommitmentType().PurchaseOrder) != null)
+            {
+                context.CommitmentType = new ProcoreEnums.ProcoreCommitmentType().PurchaseOrder;
+            }
+            else
+            {
+                Console.WriteLine("❌ Commitment doesn't match a known type");
                 response.StatusCode = 400;
-                await response.WriteAsJsonAsync(new { error = "Missing Procore context IDs" });
+                await response.WriteAsJsonAsync(new { error = "Invalid Procore context" });
                 return;
             }
+            
 
             Console.WriteLine("📥 /api/send received");
-            Console.WriteLine($"Company: {companyId}, Project: {projectId}, Commitment: {commitmentId}");
+            Console.WriteLine($"Procore context: {context}");
             Console.WriteLine(new { generalContractor, subContractor });
 
             // Export PDF from Procore
             var (pdfBytes, exportError) = await procoreService.ExportCommitmentPdfAsync(
-                companyId,
-                projectId,
-                commitmentId
+                context
             );
 
             if (exportError != null)
@@ -266,19 +270,12 @@ public static class ApiEndpoints
             Console.WriteLine("📤 Sending PDF to SigniFlow...");
 
             // Send to SigniFlow
-            var metadata = new CommitmentMetadata
-            {
-                CompanyId = companyId,
-                ProjectId = projectId,
-                CommitmentId = commitmentId,
-                IntegrationType = "Procore"
-            };
-            var documentName = $"Procore_Commitment_{commitmentId}";
-            var viewers = await adminService.GetAllViewersAsync(companyId);
+            var documentName = $"Procore_Commitment_{context.CommitmentId}";
+            var viewers = await adminService.GetAllViewersAsync(context.CompanyId);
 
             var (workflowResponse, signiflowError) = await signiflowService.CreateWorkflowAsync(
                 pdfBytes!,
-                metadata,
+                context,
                 documentName,
                 generalContractor,
                 subContractor,
@@ -299,13 +296,13 @@ public static class ApiEndpoints
             // Update status on procore
             var patch = new CommitmentContractPatch
             {
-                Status = new ProcoreEnums.WorkflowStatus().AwaitingSignature,
+                Status = context.CommitmentType == new ProcoreEnums.ProcoreCommitmentType().SubContract ?
+                    new ProcoreEnums.SubcontractWorkflowStatus().AwaitingSignature :
+                    new ProcoreEnums.PurchaseOrderWorkflowStatus().Submitted,
             };
 
             await procoreService.PatchCommitmentAsync(
-                commitmentId,
-                projectId,
-                companyId,
+                context,
                 patch
             );
 

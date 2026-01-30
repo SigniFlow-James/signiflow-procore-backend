@@ -296,12 +296,19 @@ public class ProcoreProject
 /// Commitment Metadata Model
 /// </summary>
 
-public class CommitmentMetadata
+public class ProcoreContext
 {
+    [JsonPropertyName("company_id")]
     public string CompanyId { get; set; } = "";
+
+    [JsonPropertyName("project_id")]
     public string ProjectId { get; set; } = "";
+
+    [JsonPropertyName("object_id")]
     public string CommitmentId { get; set; } = "";
-    public string IntegrationType { get; set; } = "";
+
+    [JsonPropertyName("route")]
+    public string CommitmentType { get; set; } = "";
 }
 
 public class CreateUploadRequest
