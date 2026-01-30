@@ -11,8 +11,8 @@ var builder = WebApplication.CreateBuilder(args);
 var FRONTEND_URL = AppConfig.FrontendUrl ?? throw new InvalidOperationException("FRONTEND_URL environment variable not configured");
 
 Console.WriteLine($"CurrentDirectory: {Directory.GetCurrentDirectory()}");
-Console.WriteLine($"Data exists: {Directory.Exists("/data")}");
-Console.WriteLine($"Files: {string.Join(", ", Directory.GetFiles("/data"))}");
+Console.WriteLine($"Data exists: {Directory.Exists("/app/data")}");
+Console.WriteLine($"Files: {string.Join(", ", Directory.GetFiles("/app/data"))}");
 
 
 // ------------------------------------------------------------
