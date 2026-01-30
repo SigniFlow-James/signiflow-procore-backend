@@ -51,9 +51,9 @@ public class BasicUserInfo
     [JsonPropertyName("firstNames")]
     public string FirstNames { get; set; } = "";
 
-    [JsonPropertyName("lirstName")]
+    [JsonPropertyName("lastName")]
     public string LastName{ get; set; } = "";
-    
+
     [JsonPropertyName("email")]
     public string Email { get; set; } = "";
 }

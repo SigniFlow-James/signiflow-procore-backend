@@ -183,6 +183,7 @@ public static class ApiEndpoints
                 await response.WriteAsJsonAsync(new { error = "Missing general contractor details" });
                 return;
             }
+            
             var generalContractor = JsonSerializer.Deserialize<BasicUserInfo>(generalContractorProp);
 
             if (!form.TryGetProperty("subContractorSigner", out var subContractorProp))
@@ -200,6 +201,7 @@ public static class ApiEndpoints
                 generalContractor.FirstNames == "" ||
                 generalContractor.LastName == "")
             {
+                Console.WriteLine("❌ Missing General Contractor names or email");
                 response.StatusCode = 400;
                 await response.WriteAsJsonAsync(new { error = "General contractor names or email are missing" });
                 return;
@@ -210,6 +212,7 @@ public static class ApiEndpoints
                 subContractor.FirstNames == "" ||
                 subContractor.LastName == "")
             {
+                Console.WriteLine("❌ Missing Sub Contractor names or email");
                 response.StatusCode = 400;
                 await response.WriteAsJsonAsync(new { error = "Sub contractor names or email are missing" });
                 return;
