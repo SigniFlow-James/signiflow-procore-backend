@@ -185,7 +185,7 @@ public static class ApiEndpoints
             }
             var generalContractor = JsonSerializer.Deserialize<BasicUserInfo>(generalContractorProp);
 
-            if (!form.TryGetProperty("subContractor", out var subContractorProp))
+            if (!form.TryGetProperty("subContractorSigner", out var subContractorProp))
             {
                 Console.WriteLine("❌ Missing Sub Contractor information");
                 response.StatusCode = 400;
