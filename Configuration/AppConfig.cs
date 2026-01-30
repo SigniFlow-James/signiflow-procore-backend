@@ -5,6 +5,9 @@ public static class AppConfig
 {
     // Frontend Configuration
     public static string? FrontendUrl => Environment.GetEnvironmentVariable("FRONTEND_URL");
+    public static string? DiskPath => Environment.GetEnvironmentVariable("DISK_PATH");
+    public static string? AdminUsername => Environment.GetEnvironmentVariable("ADMIN_USERNAME");
+    public static string? AdminPassword => Environment.GetEnvironmentVariable("ADMIN_PASSWORD");
 
     // Procore Configuration
     public static string? ProcoreClientId => Environment.GetEnvironmentVariable("PROCORE_CLIENT_ID");

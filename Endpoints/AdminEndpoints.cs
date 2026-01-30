@@ -4,16 +4,39 @@
 using System.Text.Json;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Features;
 using Procore.APIClasses;
+using Signiflow.APIClasses;
 
 public static class AdminEndpoints
 {
+    private static string? TokenCheck(HttpRequest request, AdminService adminService)
+    {
+        try
+        {
+            request.Headers.TryGetValue("bearer-token", out var token);
+            bool tokenCheck = adminService.ChallengeToken(token);
+            if (tokenCheck)
+            {
+                return adminService.GenerateAdminToken(token);
+            }
+            Console.WriteLine("❌ Invalid token");
+            return null;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            return null;
+        }
+    }
     public static void MapAdminEndpoints(this WebApplication app)
     {
+
         // Admin login endpoint
         app.MapPost("/admin/login", async (
             HttpRequest request,
-            HttpResponse response
+            HttpResponse response,
+            AdminService adminService
         ) =>
         {
             Console.WriteLine("📥 /admin/login received");
@@ -47,19 +70,21 @@ public static class AdminEndpoints
             var username = usernameProp.GetString();
             var password = passwordProp.GetString();
 
-            // TODO: Replace with proper authentication
-            // This is a placeholder - implement proper credential checking
-            if (username == "admin" && password == "admin123")
+            try
             {
-                Console.WriteLine("✅ Admin login successful");
-                response.StatusCode = 200;
-                await response.WriteAsJsonAsync(new
+                if (adminService.IsValidAdminCredentials(username, password))
                 {
-                    success = true,
-                    message = "Login successful",
-                });
+                    Console.WriteLine("✅ Admin login successful");
+                    response.StatusCode = 200;
+                    await response.WriteAsJsonAsync(new
+                    {
+                        success = true,
+                        message = "Login successful",
+                        token = adminService.GenerateAdminToken()
+                    });
+                }
             }
-            else
+            catch
             {
                 Console.WriteLine("❌ Invalid credentials");
                 response.StatusCode = 401;
@@ -71,21 +96,63 @@ public static class AdminEndpoints
             }
         });
 
+        app.MapPost("/admin/token", async (
+            HttpRequest request,
+            HttpResponse response,
+            AdminService adminService
+        ) =>
+        {
+            Console.WriteLine("📥 /admin/token received");
+            // Token challenge
+            string? tokenCheck = TokenCheck(request, adminService);
+
+            if (tokenCheck != null)
+            {
+                Console.WriteLine("✅ Admin token login successful");
+                response.StatusCode = 200;
+                await response.WriteAsJsonAsync(new
+                {
+                    success = true,
+                    message = "Login successful",
+                    token = tokenCheck
+                });
+            }
+            else
+            {
+                Console.WriteLine("❌ Invalid token");
+                response.StatusCode = 401;
+                await response.WriteAsJsonAsync(new
+                {
+                    success = false,
+                    message = "Invalid token",
+                });
+            }
+        });
+
         app.MapGet("/admin/companies", async (
             HttpRequest request,
             HttpResponse response,
-            ProcoreService procoreService
+            ProcoreService procoreService,
+            AdminService adminService
         ) =>
         {
+            Console.WriteLine("📥 /admin/companies received");
+            // Token challenge
+            var tokenCheck = TokenCheck(request, adminService);
+            if (tokenCheck == null)
+            {
+                response.StatusCode = 401;
+                await response.WriteAsJsonAsync(new { error = "invalid token" });
+            }
 
             try
             {
-                Console.WriteLine("📥 /admin/companies received");
                 var companies = await procoreService.GetCompaniesAsync();
                 response.StatusCode = 200;
                 await response.WriteAsJsonAsync(new
                 {
-                    companies
+                    companies,
+                    token = tokenCheck
                 });
             }
             catch (Exception ex)
@@ -99,20 +166,29 @@ public static class AdminEndpoints
         app.MapGet("/admin/projects", async (
             HttpRequest request,
             HttpResponse response,
-            ProcoreService procoreService
+            ProcoreService procoreService,
+            AdminService adminService
         ) =>
         {
+            Console.WriteLine("📥 /admin/projects received");
+            // Token challenge
+            var tokenCheck = TokenCheck(request, adminService);
+            if (tokenCheck != null)
+            {
+                response.StatusCode = 401;
+                await response.WriteAsJsonAsync(new { error = "invalid token" });
+            }
 
             try
             {
-                Console.WriteLine("📥 /admin/projects received");
                 var companyID = request.Headers["company-id"].ToString();
                 var projects = await procoreService.GetProjectsAsync(companyID);
                 response.StatusCode = 200;
                 Console.WriteLine($"✅ Returning {projects.Count} projects for company {companyID}");
                 await response.WriteAsJsonAsync(new
                 {
-                    projects
+                    projects,
+                    token = tokenCheck
                 });
             }
             catch (Exception ex)
@@ -131,6 +207,14 @@ public static class AdminEndpoints
         ) =>
         {
             Console.WriteLine("📥 /admin/dashboard GET received");
+            // Token challenge
+            var tokenCheck = TokenCheck(request, adminService);
+            if (tokenCheck == null)
+            {
+                response.StatusCode = 401;
+                await response.WriteAsJsonAsync(new { error = "invalid token" });
+            }
+
             try
             {
                 if (!request.Headers.TryGetValue("company-id", out var companyId) || string.IsNullOrEmpty(companyId))
@@ -145,13 +229,21 @@ public static class AdminEndpoints
                 {
                     Console.WriteLine($"⚠️ No dashboard data found for company {companyId}. Returning empty data.");
                     response.StatusCode = 200;
-                    await response.WriteAsJsonAsync(new AdminDashboardData());
+                    await response.WriteAsJsonAsync(new
+                    {
+                        dashboardData = new AdminDashboardData(),
+                        token = tokenCheck
+                    });
                     return;
                 }
                 var dashboardData = data[companyId!];
 
                 response.StatusCode = 200;
-                await response.WriteAsJsonAsync(dashboardData);
+                await response.WriteAsJsonAsync(new
+                {
+                    dashboardData,
+                    token = tokenCheck
+                });
             }
             catch (Exception ex)
             {
@@ -169,8 +261,14 @@ public static class AdminEndpoints
         ) =>
         {
             Console.WriteLine("📥 /admin/filters POST received");
+            // Token challenge
+            var tokenCheck = TokenCheck(request, adminService);
+            if (tokenCheck == null)
+            {
+                response.StatusCode = 401;
+                await response.WriteAsJsonAsync(new { error = "invalid token" });
+            }
 
-            // Parse body
             JsonElement body;
             string? companyId;
             try
@@ -216,7 +314,8 @@ public static class AdminEndpoints
                 await response.WriteAsJsonAsync(new
                 {
                     success = true,
-                    message = "Filters saved successfully"
+                    message = "Filters saved successfully",
+                    token = tokenCheck
                 });
             }
             catch (Exception ex)
@@ -235,8 +334,14 @@ public static class AdminEndpoints
         ) =>
         {
             Console.WriteLine("📥 /admin/viewers POST received");
+            // Token challenge
+            var tokenCheck = TokenCheck(request, adminService);
+            if (tokenCheck == null)
+            {
+                response.StatusCode = 401;
+                await response.WriteAsJsonAsync(new { error = "invalid token" });
+            }
 
-            // Parse body
             JsonElement body;
             string? companyId;
             try
@@ -377,14 +482,7 @@ public static class AdminEndpoints
                 {
                     success = true,
                     message = viewers.Count == validViewers.Count ? $"{validViewers.Count} Viewer(s) saved successfully" : $"{validViewers.Count} Viewer(s) saved successfully; Unable to save {viewers.Count - validViewers.Count} invalid viewer(s)",
-                    summary = new
-                    {
-                        total = validViewers.Count,
-                        allProjects = validViewers.Count(v => v.ProjectId == null),
-                        specificProjects = validViewers.Count(v => v.ProjectId != null),
-                        byRegion = validViewers.GroupBy(v => v.Region ?? "No Region")
-                            .ToDictionary(g => g.Key, g => g.Count())
-                    }
+                    token = tokenCheck
                 });
             }
             catch (Exception ex)
@@ -400,10 +498,18 @@ public static class AdminEndpoints
         app.MapGet("/admin/users", async (
             HttpRequest request,
             HttpResponse response,
-            ProcoreService procoreService
+            ProcoreService procoreService,
+            AdminService adminService
         ) =>
         {
             Console.WriteLine("📥 /admin/users GET received");
+            // Token challenge
+            var tokenCheck = TokenCheck(request, adminService);
+            if (tokenCheck == null)
+            {
+                response.StatusCode = 401;
+                await response.WriteAsJsonAsync(new { error = "invalid token" });
+            }
 
             try
             {
@@ -420,7 +526,8 @@ public static class AdminEndpoints
                 response.StatusCode = 200;
                 await response.WriteAsJsonAsync(new
                 {
-                    value = users
+                    value = users,
+                    token = tokenCheck
                 });
             }
             catch (Exception ex)

@@ -13,11 +13,11 @@ public class AuthService
 
     private readonly ProcoreApiClient _procoreClient;
 
-    public AuthService(OAuthSession oauthSession, SigniflowApiClient sfClient, ProcoreApiClient pcClient)
+    public AuthService(OAuthSession oauthSession, SigniflowApiClient signiflowClient, ProcoreApiClient procoreClient)
     {
         _oauthSession = oauthSession;
-        _signiflowClient = sfClient;
-        _procoreClient = pcClient;
+        _signiflowClient = signiflowClient;
+        _procoreClient = procoreClient;
     }
 
 

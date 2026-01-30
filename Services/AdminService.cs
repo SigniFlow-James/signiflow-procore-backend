@@ -3,16 +3,73 @@
 // ============================================================
 using System.Text.Json;
 using Procore.APIClasses;
+using Signiflow.APIClasses;
 
 public class AdminService
 {
     private readonly string _dataFilePath;
+    private readonly HashSet<Token> _activeTokens;
+    private readonly string DISK_PATH = AppConfig.DiskPath
+        ?? throw new InvalidOperationException("DISK_PATH environment variable not configured");
+    private readonly string ADMIN_USERNAME = AppConfig.AdminUsername
+        ?? throw new InvalidOperationException("ADMIN_USERNAME environment variable not configured");
+    private readonly string ADMIN_PASSWORD = AppConfig.AdminPassword
+        ?? throw new InvalidOperationException("ADMIN_PASSWORD environment variable not configured");
 
     public AdminService()
     {
-        // Store filters and viewers in a single JSON file
-        var appDirectory = AppContext.BaseDirectory;
-        _dataFilePath = Path.Combine(appDirectory, "admin_data.json");
+        _dataFilePath = Path.Combine(DISK_PATH, "admin_data.json");
+        _activeTokens = [];
+    }
+
+    public bool IsValidAdminCredentials(string? username, string? password)
+    {
+        if (username != ADMIN_USERNAME || password != ADMIN_PASSWORD)
+        {
+            throw new UnauthorizedAccessException("Invalid admin credentials");
+        }
+        return true;
+    }
+
+    public string GenerateAdminToken(string? old_token = null)
+    {
+        if (old_token != null) RemoveToken(old_token);
+
+        var rawToken = Convert.ToBase64String(Guid.NewGuid().ToByteArray());
+        var expiry = DateTime.UtcNow.AddHours(1);
+
+        Token token = new Token
+        {
+            TokenField = rawToken,
+            TokenExpiryField = expiry
+        };
+        _activeTokens.Add(token);
+        return token.TokenField;
+    }
+
+    public bool ChallengeToken(string? token)
+    {
+        if (token == null)
+        {
+            return false;
+        }
+        var challengeToken = _activeTokens.FirstOrDefault(t => t.TokenField == token);
+        if (challengeToken == null)
+        {
+            return false;
+        }
+        if (DateTime.UtcNow >= challengeToken.TokenExpiryField)
+        {
+            RemoveToken(token);
+            return false;
+        }
+        return true;
+    }
+
+    public void RemoveToken(string token)
+    {
+        var _token = _activeTokens.FirstOrDefault(t => t.TokenField == token);
+        if (_token != null) _activeTokens.Remove(_token);        
     }
 
     public async Task<Dictionary<string, AdminDashboardData>> GetDashboardDataAsync()
@@ -50,6 +107,8 @@ public class AdminService
             return empty;
         }
     }
+
+    
 
     public async Task<List<ViewerItem>> GetAllViewersAsync(string CompanyId)
     {
