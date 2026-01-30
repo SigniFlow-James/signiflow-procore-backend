@@ -8,18 +8,80 @@ using Signiflow.APIClasses;
 public class AdminService
 {
     private readonly string _dataFilePath;
-    private readonly HashSet<Token> _activeTokens;
+    private readonly HashSet<Token> _activeAdminTokens;
+    private readonly HashSet<Token> _activeUserTokens;
     private readonly string DISK_PATH = AppConfig.DiskPath
         ?? throw new InvalidOperationException("DISK_PATH environment variable not configured");
     private readonly string ADMIN_USERNAME = AppConfig.AdminUsername
         ?? throw new InvalidOperationException("ADMIN_USERNAME environment variable not configured");
     private readonly string ADMIN_PASSWORD = AppConfig.AdminPassword
         ?? throw new InvalidOperationException("ADMIN_PASSWORD environment variable not configured");
+    private static readonly SemaphoreSlim _fileLock = new(1, 1);
 
     public AdminService()
     {
         _dataFilePath = Path.Combine(DISK_PATH, "admin_data.json");
-        _activeTokens = [];
+        _activeAdminTokens = [];
+        _activeUserTokens = [];
+    }
+
+    public async Task<Dictionary<string, AdminDashboardData>> ReadDataAsync()
+    {
+        await _fileLock.WaitAsync();
+        var empty = new Dictionary<string, AdminDashboardData>
+        {
+                { "all", new AdminDashboardData() }
+            };
+        try
+        {
+            var json = await File.ReadAllTextAsync(_dataFilePath);
+            if (string.IsNullOrWhiteSpace(json))
+            {
+                return empty;
+            }
+            return JsonSerializer.Deserialize<Dictionary<string, AdminDashboardData>>(json) ?? empty;
+        }
+        catch
+        {
+            // File is corrupted, backup and generate new
+            var tmp = Path.Combine(DISK_PATH, $"admin_data_corrupt_{DateTime.Now:yyyyMMddHHmmss}.json");
+            File.Move(_dataFilePath, tmp, overwrite: true);
+            var options = new JsonSerializerOptions
+            {
+                WriteIndented = true
+            };
+            var json = JsonSerializer.Serialize(empty, options);
+            tmp = _dataFilePath + ".tmp";
+            await File.WriteAllTextAsync(tmp, json);
+            File.Move(tmp, _dataFilePath, overwrite: true);
+            return empty;
+        }
+        finally
+        {
+            _fileLock.Release();
+        }
+    }
+
+    public async Task WriteDataAsync(Dictionary<string, AdminDashboardData> data)
+    {
+        await _fileLock.WaitAsync();
+        try
+        {
+            var options = new JsonSerializerOptions
+            {
+                WriteIndented = true
+            };
+            var json = JsonSerializer.Serialize(data, options);
+
+            // Write atomically
+            var tmp = _dataFilePath + ".tmp";
+            await File.WriteAllTextAsync(tmp, json);
+            File.Move(tmp, _dataFilePath, overwrite: true);
+        }
+        finally
+        {
+            _fileLock.Release();
+        }
     }
 
     public bool IsValidAdminCredentials(string? username, string? password)
@@ -31,46 +93,142 @@ public class AdminService
         return true;
     }
 
-    public string GenerateAdminToken(string? old_token = null)
+    public string GenerateAdminToken(string? oldToken = null)
     {
-        if (old_token != null) RemoveToken(old_token);
-
-        var rawToken = Convert.ToBase64String(Guid.NewGuid().ToByteArray());
-        var expiry = DateTime.UtcNow.AddHours(1);
-
-        Token token = new Token
+        if (oldToken != null)
         {
-            TokenField = rawToken,
-            TokenExpiryField = expiry
-        };
-        _activeTokens.Add(token);
+            RemoveAdminToken(oldToken);
+        }
+
+        var token = CreateToken();
+        _activeAdminTokens.Add(token);
         return token.TokenField;
     }
 
-    public bool ChallengeToken(string? token)
+    public string GenerateUserToken(string? oldToken = null)
+    {
+        if (oldToken != null)
+        {
+            RemoveUserToken(oldToken);
+        }
+
+        var token = CreateToken();
+        _activeUserTokens.Add(token);
+        return token.TokenField;
+    }
+
+    private static Token CreateToken()
+    {
+        return new Token
+        {
+            TokenField = Convert.ToBase64String(Guid.NewGuid().ToByteArray()),
+            TokenExpiryField = DateTime.UtcNow.AddHours(1)
+        };
+    }
+
+    public bool ChallengeAdminToken(string token)
+    {
+        var t = _activeAdminTokens.FirstOrDefault(x => x.TokenField == token);
+
+        if (t == null)
+            return false;
+
+        if (DateTime.UtcNow >= t.TokenExpiryField)
+        {
+            _activeAdminTokens.Remove(t);
+            return false;
+        }
+
+        return true;
+    }
+
+    public bool ChallengeUserToken(string token)
+    {
+        var t = _activeUserTokens.FirstOrDefault(x => x.TokenField == token);
+
+        if (t == null)
+            return false;
+
+        if (DateTime.UtcNow >= t.TokenExpiryField)
+        {
+            _activeUserTokens.Remove(t);
+            return false;
+        }
+
+        return true;
+    }
+
+    private static string? ExtractBearerToken(HttpRequest request)
+    {
+        return request.Headers.TryGetValue("bearer-token", out var token)
+            ? token.ToString()
+            : null;
+    }
+
+    public bool ChallengeToken(string? token, string list)
     {
         if (token == null)
         {
             return false;
         }
-        var challengeToken = _activeTokens.FirstOrDefault(t => t.TokenField == token);
+        Token? challengeToken;
+        if (list == "admin")
+        {
+            challengeToken = _activeAdminTokens.FirstOrDefault(t => t.TokenField == token);
+        }
+        else if (list == "user")
+        {
+            challengeToken = _activeUserTokens.FirstOrDefault(t => t.TokenField == token);
+        }
+        else
+        {
+            return false;
+        }
+
         if (challengeToken == null)
         {
             return false;
         }
         if (DateTime.UtcNow >= challengeToken.TokenExpiryField)
         {
-            RemoveToken(token);
+            RemoveAdminToken(token);
             return false;
         }
         return true;
     }
 
-    public void RemoveToken(string token)
+    public string? AdminTokenCheck(HttpRequest request)
     {
-        var _token = _activeTokens.FirstOrDefault(t => t.TokenField == token);
-        if (_token != null) _activeTokens.Remove(_token);        
+        var token = ExtractBearerToken(request);
+        if (token == null)
+            return null;
+
+        return ChallengeAdminToken(token) ? token : null;
     }
+
+    public string? UserTokenCheck(HttpRequest request)
+    {
+        var token = ExtractBearerToken(request);
+        if (token == null)
+            return null;
+
+        return ChallengeUserToken(token) ? token : null;
+    }
+
+    private void RemoveAdminToken(string token)
+    {
+        var t = _activeAdminTokens.FirstOrDefault(x => x.TokenField == token);
+        if (t != null)
+            _activeAdminTokens.Remove(t);
+    }
+
+    private void RemoveUserToken(string token)
+    {
+        var t = _activeUserTokens.FirstOrDefault(x => x.TokenField == token);
+        if (t != null)
+            _activeUserTokens.Remove(t);
+    }
+
 
     public async Task<Dictionary<string, AdminDashboardData>> GetDashboardDataAsync()
     {
@@ -80,25 +238,13 @@ public class AdminService
             };
         if (!File.Exists(_dataFilePath))
         {
-            await File.WriteAllTextAsync(
-                _dataFilePath,
-                JsonSerializer.Serialize(empty)
-            );
-
-            return empty;
-        }
-
-        var json = await File.ReadAllTextAsync(_dataFilePath);  // todo: add threading protection to prevent multiple users accessing at once
-
-        if (string.IsNullOrWhiteSpace(json))
-        {
+            await WriteDataAsync(empty);
             return empty;
         }
 
         try
         {
-            return JsonSerializer.Deserialize<Dictionary<string, AdminDashboardData>>(json)
-                ?? empty;
+            return await ReadDataAsync();
         }
         catch (JsonException ex)
         {
@@ -108,7 +254,7 @@ public class AdminService
         }
     }
 
-    
+
 
     public async Task<List<ViewerItem>> GetAllViewersAsync(string CompanyId)
     {
@@ -145,13 +291,8 @@ public class AdminService
         }
         if (filters != null) saveData[CompanyId].Filters = filters;
         if (viewers != null) saveData[CompanyId].Viewers = viewers;
-        var options = new JsonSerializerOptions
-        {
-            WriteIndented = true
-        };
 
-        var json = JsonSerializer.Serialize(saveData, options);
-        await File.WriteAllTextAsync(_dataFilePath, json);  // todo: add threading protection to prevent multiple users accessing at once
+        await WriteDataAsync(saveData);
         Console.WriteLine($"💾 Dashboard data saved to {_dataFilePath}");
     }
 

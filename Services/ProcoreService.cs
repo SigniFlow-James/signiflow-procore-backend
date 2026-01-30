@@ -159,6 +159,33 @@ public class ProcoreService
         }
     }
 
+    public async Task<(bool, string? error)> CheckCommitmentAsync(
+        string companyId,
+        string projectId,
+        string commitmentId)
+    {
+        try
+        {
+            var response = await _procoreClient.SendAsync(
+                HttpMethod.Get,
+                "2.0",
+                _oauthSession.Procore.AccessToken,
+                $"companies/{companyId}/projects/{projectId}/commitment_contracts/{commitmentId}",
+                companyId
+                );
+            
+            response.EnsureSuccessStatusCode();
+
+            return (true, null);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("❌ Error checking commitment:");
+            Console.WriteLine(ex);
+            return (false, "Error checking commitment");
+        }
+    }
+
     // ------------------------------------------------------------
     // Export commitment PDF from Procore
     // ------------------------------------------------------------

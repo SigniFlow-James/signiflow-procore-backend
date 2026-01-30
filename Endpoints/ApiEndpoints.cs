@@ -12,6 +12,41 @@ public static class ApiEndpoints
 {
     public static void MapApiEndpoints(this WebApplication app)
     {
+        app.MapPost("/api/init", async (
+            HttpRequest request,
+            HttpResponse response,
+            ProcoreService procoreService,
+            AuthService authService,
+            AdminService adminService
+        ) =>
+        {
+            var companyId = request.Headers["company-id"].ToString();
+            var projectId = request.Headers["project-id"].ToString();
+            var commitmentId = request.Headers["object-id"].ToString();
+            bool success;
+            string? error;
+            (success, error) = await procoreService.CheckCommitmentAsync(companyId, projectId, commitmentId);
+            Console.WriteLine($"API init error: {error}");
+            if (!success)
+            {
+                response.StatusCode = 401;
+                await response.WriteAsJsonAsync(new { error = "invalid context" });
+                return;
+            }
+            else
+            {
+                Console.WriteLine("✅ User context challenge successful");
+                response.StatusCode = 200;
+                await response.WriteAsJsonAsync(new
+                {
+                    success = true,
+                    message = "Challenge successful",
+                    token = adminService.GenerateUserToken()
+                });
+                return;
+            }
+
+        });
         // Fetch recipients from Procore
         app.MapGet("/api/recipients", async (
             HttpRequest request,
@@ -22,12 +57,20 @@ public static class ApiEndpoints
         ) =>
         {
             Console.WriteLine("📥 /api/recipients received");
+            var adminTokenCheck = adminService.UserTokenCheck(request);
+            var userTokenCheck = adminService.UserTokenCheck(request);
+            if (userTokenCheck == null && adminTokenCheck == null)
+            {
+                response.StatusCode = 401;
+                await response.WriteAsJsonAsync(new { error = "invalid token" });
+                return;
+            }
 
             // Auth guard
             if (!await authService.CheckAuthResponseAsync(response))
             {
                 response.StatusCode = 401;
-                await response.WriteAsJsonAsync(new { error = "Authentication failed" });
+                await response.WriteAsJsonAsync(new { error = "External Authentication failed, OAuth restart required." });
                 return;
             }
 
@@ -52,7 +95,11 @@ public static class ApiEndpoints
             var filteredUsers = adminService.FilterUsers(users, companyId, projectId);
 
             response.StatusCode = 200;
-            await response.WriteAsJsonAsync(filteredUsers);
+            await response.WriteAsJsonAsync(new
+                {
+                    filteredUsers,
+                    token = adminTokenCheck != null ? adminService.GenerateAdminToken(adminTokenCheck) : adminService.GenerateUserToken(userTokenCheck)
+                });
         });
 
 
@@ -66,6 +113,14 @@ public static class ApiEndpoints
             AdminService adminService
         ) =>
         {
+            var userTokenCheck = adminService.UserTokenCheck(request);
+            if (userTokenCheck == null)
+            {
+                response.StatusCode = 401;
+                await response.WriteAsJsonAsync(new { error = "invalid token" });
+                return;
+            }
+
             // Auth guard
             if (!await authService.CheckAuthResponseAsync(response))
             {
@@ -124,8 +179,8 @@ public static class ApiEndpoints
                 Email = subContractorEmailProp.GetString() ?? ""
             };
             if (
-                (generalContractor.Email == "") || 
-                (generalContractor.FirstNames == "") || 
+                (generalContractor.Email == "") ||
+                (generalContractor.FirstNames == "") ||
                 (generalContractor.LastName == ""))
             {
                 response.StatusCode = 400;
@@ -140,8 +195,8 @@ public static class ApiEndpoints
                 Email = subContractorEmailProp.GetString() ?? ""
             };
             if (
-                (subContractor.Email == "") || 
-                (subContractor.FirstNames == "") || 
+                (subContractor.Email == "") ||
+                (subContractor.FirstNames == "") ||
                 (subContractor.LastName == ""))
             {
                 response.StatusCode = 400;
@@ -178,7 +233,7 @@ public static class ApiEndpoints
 
             Console.WriteLine("📥 /api/send received");
             Console.WriteLine($"Company: {companyId}, Project: {projectId}, Commitment: {commitmentId}");
-            Console.WriteLine(new {generalContractor, subContractor});
+            Console.WriteLine(new { generalContractor, subContractor });
 
             // Export PDF from Procore
             var (pdfBytes, exportError) = await procoreService.ExportCommitmentPdfAsync(
@@ -246,7 +301,8 @@ public static class ApiEndpoints
                 success = true,
                 pdfSize = pdfBytes!.Length,
                 documentId = workflowResponse.DocIDField,
-                documentName
+                documentName,
+                token = adminService.GenerateUserToken(userTokenCheck)
             });
         });
     }

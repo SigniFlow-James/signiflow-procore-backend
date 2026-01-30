@@ -10,25 +10,7 @@ using Signiflow.APIClasses;
 
 public static class AdminEndpoints
 {
-    private static string? TokenCheck(HttpRequest request, AdminService adminService)
-    {
-        try
-        {
-            request.Headers.TryGetValue("bearer-token", out var token);
-            bool tokenCheck = adminService.ChallengeToken(token);
-            if (tokenCheck)
-            {
-                return token;
-            }
-            Console.WriteLine("❌ Invalid token");
-            return null;
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine(ex);
-            return null;
-        }
-    }
+    
     public static void MapAdminEndpoints(this WebApplication app)
     {
 
@@ -106,7 +88,7 @@ public static class AdminEndpoints
         {
             Console.WriteLine("📥 /admin/token received");
             // Token challenge
-            string? tokenCheck = TokenCheck(request, adminService);
+            var tokenCheck = adminService.AdminTokenCheck(request);
 
             if (tokenCheck != null)
             {
@@ -142,7 +124,7 @@ public static class AdminEndpoints
         {
             Console.WriteLine("📥 /admin/companies received");
             // Token challenge
-            var tokenCheck = TokenCheck(request, adminService);
+            var tokenCheck = adminService.AdminTokenCheck(request);
             if (tokenCheck == null)
             {
                 response.StatusCode = 401;
@@ -179,7 +161,7 @@ public static class AdminEndpoints
         {
             Console.WriteLine("📥 /admin/projects received");
             // Token challenge
-            var tokenCheck = TokenCheck(request, adminService);
+            var tokenCheck = adminService.AdminTokenCheck(request);
             if (tokenCheck == null)
             {
                 response.StatusCode = 401;
@@ -217,7 +199,7 @@ public static class AdminEndpoints
         {
             Console.WriteLine("📥 /admin/dashboard GET received");
             // Token challenge
-            var tokenCheck = TokenCheck(request, adminService);
+            var tokenCheck = adminService.AdminTokenCheck(request);
             if (tokenCheck == null)
             {
                 response.StatusCode = 401;
@@ -277,7 +259,7 @@ public static class AdminEndpoints
         {
             Console.WriteLine("📥 /admin/filters POST received");
             // Token challenge
-            var tokenCheck = TokenCheck(request, adminService);
+            var tokenCheck = adminService.AdminTokenCheck(request);
             if (tokenCheck == null)
             {
                 response.StatusCode = 401;
@@ -353,7 +335,7 @@ public static class AdminEndpoints
         {
             Console.WriteLine("📥 /admin/viewers POST received");
             // Token challenge
-            var tokenCheck = TokenCheck(request, adminService);
+            var tokenCheck = adminService.AdminTokenCheck(request);
             if (tokenCheck == null)
             {
                 response.StatusCode = 401;
@@ -510,7 +492,7 @@ public static class AdminEndpoints
         {
             Console.WriteLine("📥 /admin/users GET received");
             // Token challenge
-            var tokenCheck = TokenCheck(request, adminService);
+            var tokenCheck = adminService.AdminTokenCheck(request);
             if (tokenCheck == null)
             {
                 response.StatusCode = 401;
