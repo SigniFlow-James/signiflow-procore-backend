@@ -31,7 +31,7 @@ public static class ApiEndpoints
             {
                 Console.WriteLine("❌ Invalid context");
                 response.StatusCode = 401;
-                await response.WriteAsJsonAsync(new { error = "invalid context" });
+                await response.WriteAsJsonAsync(new { error = "Invalid context" });
                 return;
             }
             else
@@ -49,7 +49,7 @@ public static class ApiEndpoints
 
         });
         // Fetch recipients from Procore
-        app.MapGet("/api/recipients", async (
+        _ = app.MapGet("/api/recipients", async (
             HttpRequest request,
             HttpResponse response,
             ProcoreService procoreService,
@@ -58,15 +58,35 @@ public static class ApiEndpoints
         ) =>
         {
             Console.WriteLine("📥 /api/recipients received");
-            var adminTokenCheck = adminService.UserTokenCheck(request);
-            var userTokenCheck = adminService.UserTokenCheck(request);
-            if (userTokenCheck == null && adminTokenCheck == null)
+            bool isAdmin = false;
+            string token;
+            if (request.Headers.TryGetValue("bearer-token", out var t))
             {
-                Console.WriteLine("❌ Invalid token");
+                Console.WriteLine((1, t));
+                token = t.ToString();
+                Console.WriteLine((2, token));
+                if (adminService.ChallengeAdminToken(token))
+                {   
+                    Console.WriteLine("Admin Token found");
+                    isAdmin = true;
+                }
+                else if (!adminService.ChallengeUserToken(token))
+                {
+                    Console.WriteLine("❌ Invalid token");
+                    response.StatusCode = 401;
+                    await response.WriteAsJsonAsync(new { error = "Invalid token" });
+                    return;
+                }
+            }
+            else
+            {
+                Console.WriteLine("❌ Missing token");
                 response.StatusCode = 401;
-                await response.WriteAsJsonAsync(new { error = "invalid token" });
+                await response.WriteAsJsonAsync(new { error = "Missing token" });
                 return;
             }
+            Console.WriteLine("User Token found");
+            
 
             // Auth guard
             if (!await authService.CheckAuthResponseAsync(response))
@@ -99,10 +119,10 @@ public static class ApiEndpoints
 
             response.StatusCode = 200;
             await response.WriteAsJsonAsync(new
-                {
-                    signers = filteredUsers,
-                    token = adminTokenCheck != null ? adminService.GenerateAdminToken(adminTokenCheck) : adminService.GenerateUserToken(userTokenCheck)
-                });
+            {
+                signers = filteredUsers,
+                token = isAdmin ? adminService.GenerateAdminToken(token) : adminService.GenerateUserToken(token)
+            });
         });
 
 
@@ -122,7 +142,7 @@ public static class ApiEndpoints
             {
                 Console.WriteLine("❌ Invalid token");
                 response.StatusCode = 401;
-                await response.WriteAsJsonAsync(new { error = "invalid token" });
+                await response.WriteAsJsonAsync(new { error = "Invalid token" });
                 return;
             }
 
