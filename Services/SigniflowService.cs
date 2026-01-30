@@ -88,8 +88,8 @@ public class SigniflowService
                 );
             var signerTwoFullInfo = GenerateWorkflowSignerInfo(
                 signerTwo, 
-                "ProcoreSubContractorSignHere",
-                "ProcoreSubContractorSignedDate"
+                "ProcoreSubcontractorSignHere",
+                "ProcoreSubcontractorSignedDate"
                 );
 
             // Get viewers
