@@ -113,9 +113,11 @@ public static class ApiEndpoints
             AdminService adminService
         ) =>
         {
+            Console.WriteLine("📥 /api/send received");
             var userTokenCheck = adminService.UserTokenCheck(request);
             if (userTokenCheck == null)
             {
+                Console.WriteLine("❌ Invalid token");
                 response.StatusCode = 401;
                 await response.WriteAsJsonAsync(new { error = "invalid token" });
                 return;

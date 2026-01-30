@@ -154,7 +154,6 @@ public class AdminService
             _activeUserTokens.Remove(t);
             return false;
         }
-
         return true;
     }
 
