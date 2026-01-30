@@ -62,12 +62,9 @@ public static class ApiEndpoints
             string token;
             if (request.Headers.TryGetValue("bearer-token", out var t))
             {
-                Console.WriteLine((1, t));
                 token = t.ToString();
-                Console.WriteLine((2, token));
                 if (adminService.ChallengeAdminToken(token))
                 {   
-                    Console.WriteLine("Admin Token found");
                     isAdmin = true;
                 }
                 else if (!adminService.ChallengeUserToken(token))
@@ -85,8 +82,7 @@ public static class ApiEndpoints
                 await response.WriteAsJsonAsync(new { error = "Missing token" });
                 return;
             }
-            Console.WriteLine("User Token found");
-            
+
 
             // Auth guard
             if (!await authService.CheckAuthResponseAsync(response))
@@ -177,56 +173,45 @@ public static class ApiEndpoints
                 return;
             }
 
+
+
             // Extract info from form
-            if (!form.TryGetProperty("generalContractorEmail", out var generalContractorEmailProp) ||
-                !form.TryGetProperty("generalContractorFirstNames", out var generalContractorFirstNamesProp) ||
-                !form.TryGetProperty("generalContractorLastName", out var generalContractorLastNameProp))
+            if (!form.TryGetProperty("generalContractorSigner", out var generalContractorProp))
             {
-                Console.WriteLine("❌ Missing signer information");
+                Console.WriteLine("❌ Missing General Contractor information");
                 response.StatusCode = 400;
                 await response.WriteAsJsonAsync(new { error = "Missing manager details" });
                 return;
             }
+            var generalContractor = JsonSerializer.Deserialize<BasicUserInfo>(generalContractorProp);
 
-            if (!form.TryGetProperty("subContractorEmail", out var subContractorEmailProp) ||
-                !form.TryGetProperty("subContractorFirstNames", out var subContractorFirstNamesProp) ||
-                !form.TryGetProperty("subContractorLastName", out var subContractorLastNameProp))
+            if (!form.TryGetProperty("subContractor", out var subContractorProp))
             {
-                Console.WriteLine("❌ Missing signer information");
+                Console.WriteLine("❌ Missing Sub Contractor information");
                 response.StatusCode = 400;
-                await response.WriteAsJsonAsync(new { error = "Missing recipient email, first names or last name" });
+                await response.WriteAsJsonAsync(new { error = "Missing sub-contractor email, first names or last name" });
                 return;
             }
 
-            var generalContractor = new BasicUserInfo
-            {
-                FirstNames = subContractorFirstNamesProp.GetString() ?? "",
-                LastName = subContractorLastNameProp.GetString() ?? "",
-                Email = subContractorEmailProp.GetString() ?? ""
-            };
-            if (
-                (generalContractor.Email == "") ||
-                (generalContractor.FirstNames == "") ||
-                (generalContractor.LastName == ""))
+            var subContractor = JsonSerializer.Deserialize<BasicUserInfo>(subContractorProp);
+
+            if (generalContractor == null || 
+                generalContractor.Email == "" ||
+                generalContractor.FirstNames == "" ||
+                generalContractor.LastName == "")
             {
                 response.StatusCode = 400;
-                await response.WriteAsJsonAsync(new { error = "Manager email and full name are required" });
+                await response.WriteAsJsonAsync(new { error = "General contractor names or email are missing" });
                 return;
             }
 
-            var subContractor = new BasicUserInfo
-            {
-                FirstNames = subContractorFirstNamesProp.GetString() ?? "",
-                LastName = subContractorLastNameProp.GetString() ?? "",
-                Email = subContractorEmailProp.GetString() ?? ""
-            };
-            if (
-                (subContractor.Email == "") ||
-                (subContractor.FirstNames == "") ||
-                (subContractor.LastName == ""))
+            if (subContractor == null ||
+                subContractor.Email == "" ||
+                subContractor.FirstNames == "" ||
+                subContractor.LastName == "")
             {
                 response.StatusCode = 400;
-                await response.WriteAsJsonAsync(new { error = "Recipient email and full name are required" });
+                await response.WriteAsJsonAsync(new { error = "Sub contractor names or email are missing" });
                 return;
             }
             var customMessage = form.TryGetProperty("customMessage", out var msgProp)
