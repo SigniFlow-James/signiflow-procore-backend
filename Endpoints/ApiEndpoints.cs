@@ -97,7 +97,7 @@ public static class ApiEndpoints
             response.StatusCode = 200;
             await response.WriteAsJsonAsync(new
                 {
-                    filteredUsers,
+                    signers = filteredUsers,
                     token = adminTokenCheck != null ? adminService.GenerateAdminToken(adminTokenCheck) : adminService.GenerateUserToken(userTokenCheck)
                 });
         });
