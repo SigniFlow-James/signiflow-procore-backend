@@ -180,7 +180,7 @@ public static class AdminEndpoints
             Console.WriteLine("📥 /admin/projects received");
             // Token challenge
             var tokenCheck = TokenCheck(request, adminService);
-            if (tokenCheck != null)
+            if (tokenCheck == null)
             {
                 response.StatusCode = 401;
                 await response.WriteAsJsonAsync(new { error = "invalid token" });
@@ -235,23 +235,27 @@ public static class AdminEndpoints
                     return;
                 }
                 var data = await adminService.GetDashboardDataAsync();
+                var dashboardData = new AdminDashboardData();
                 if (!data.ContainsKey(companyId!))
                 {
                     Console.WriteLine($"⚠️ No dashboard data found for company {companyId}. Returning empty data.");
                     response.StatusCode = 200;
+                    
                     await response.WriteAsJsonAsync(new
                     {
-                        dashboardData = new AdminDashboardData(),
+                        filters = dashboardData.Filters,
+                        viewers = dashboardData.Viewers,
                         token = adminService.GenerateAdminToken(tokenCheck)
                     });
                     return;
                 }
-                var dashboardData = data[companyId!];
+                dashboardData = data[companyId!];
 
                 response.StatusCode = 200;
                 await response.WriteAsJsonAsync(new
                 {
-                    dashboardData,
+                    filters = dashboardData.Filters,
+                    viewers = dashboardData.Viewers,
                     token = adminService.GenerateAdminToken(tokenCheck)
                 });
                 return;

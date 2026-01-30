@@ -6,8 +6,8 @@ using System.Text.Json.Serialization;
 
 public class AdminDashboardData
 {
-    public List<FilterItem> Filters { get; set; } = new();
-    public List<ViewerItem> Viewers { get; set; } = new();
+    public List<FilterItem> Filters { get; set; } = [];
+    public List<ViewerItem> Viewers { get; set; } = [];
 }
 
 public class FilterItem
