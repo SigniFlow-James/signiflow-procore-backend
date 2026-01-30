@@ -55,10 +55,10 @@ public class ProcoreUser
     public required string FaxNumber { get; set; }
 
     [JsonPropertyName("first_name")]
-    public required string FirstName { get; set; }
+    public required string FirstNames { get; set; }
 
     [JsonPropertyName("id")]
-    public required string Id { get; set; }
+    public int Id { get; set; }
 
     [JsonPropertyName("initials")]
     public required string Initials { get; set; }
@@ -127,7 +127,7 @@ public class ProcoreUser
 public class VendorFromUser
 {
     [JsonPropertyName("id")]
-    public required string Id { get; set; }
+    public int Id { get; set; }
 
     [JsonPropertyName("name")]
     public required string Name { get; set; }
@@ -169,7 +169,7 @@ public class ProcoreRecipient
     public required string JobTitle { get; set; }
 
     [JsonPropertyName("first_name")]
-    public required string FirstName { get; set; }
+    public required string FirstNames { get; set; }
     
     [JsonPropertyName("last_name")]
     public required string LastName { get; set; }

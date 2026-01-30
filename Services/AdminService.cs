@@ -112,10 +112,11 @@ public class AdminService
             Console.WriteLine("ℹ️ No filters configured, returning all users");
             return users.Select(u => new Recipient
             {
-                UserId = u.EmployeeId?.ToString(),
-                FirstNames = u.FirstName,
+                UserId = u.Id?.ToString(),
+                FirstNames = u.FirstNames,
                 LastName = u.LastName,
-                Email = u.EmailAddress
+                Email = u.EmailAddress,
+                JobTitle = u.JobTitle
             }).ToList();
         }
         // Apply filters based on project context
@@ -146,7 +147,7 @@ public class AdminService
                     {
                         (int)UserFilterTypeEnum.EmployeeId => user.EmployeeId?.ToString() == filter.Value?.ToString(),
                         (int)UserFilterTypeEnum.JobTitle => user.JobTitle == filter.Value?.ToString(),
-                        (int)UserFilterTypeEnum.FirstName => user.FirstName == filter.Value?.ToString(),
+                        (int)UserFilterTypeEnum.FirstName => user.FirstNames == filter.Value?.ToString(),
                         (int)UserFilterTypeEnum.LastName => user.LastName == filter.Value?.ToString(),
                         (int)UserFilterTypeEnum.EmailAddress => user.EmailAddress == filter.Value?.ToString(),
                         _ => false
@@ -172,7 +173,7 @@ public class AdminService
                 {
                     (int)UserFilterTypeEnum.EmployeeId => user.EmployeeId.ToString() == filter.Value?.ToString(),
                     (int)UserFilterTypeEnum.JobTitle => user.JobTitle == filter.Value?.ToString(),
-                    (int)UserFilterTypeEnum.FirstName => user.FirstName == filter.Value?.ToString(),
+                    (int)UserFilterTypeEnum.FirstName => user.FirstNames == filter.Value?.ToString(),
                     (int)UserFilterTypeEnum.LastName => user.LastName == filter.Value?.ToString(),
                     (int)UserFilterTypeEnum.EmailAddress => user.EmailAddress == filter.Value?.ToString(),
                     _ => false
@@ -182,10 +183,11 @@ public class AdminService
 
         var recipientSigners = filteredUsers.Select(u => new Recipient
         {
-            UserId = u.EmployeeId?.ToString(),
-            FirstNames = u.FirstName,
+            UserId = u.Id?.ToString(),
+            FirstNames = u.FirstNames,
             LastName = u.LastName,
-            Email = u.EmailAddress
+            Email = u.EmailAddress,
+            JobTitle = u.JobTitle
         }).ToList();
 
         Console.WriteLine($"🔍 Filtered users: {recipientSigners.Count} out of {users.Count}, after applying {filters.Count} filters");

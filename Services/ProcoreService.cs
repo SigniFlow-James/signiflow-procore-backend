@@ -66,10 +66,10 @@ public class ProcoreService
             
             var recipients = users.Select(user => new ProcoreRecipient
             {
-                Id = user.Id,
+                Id = user.Id.ToString(),
                 EmployeeId = user.EmployeeId,
                 EmailAddress = user.EmailAddress,
-                FirstName = user.FirstName,
+                FirstNames = user.FirstNames,
                 LastName = user.LastName,
                 JobTitle = user.JobTitle
             }).ToList();

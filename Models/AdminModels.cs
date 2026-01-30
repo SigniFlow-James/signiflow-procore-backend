@@ -59,6 +59,9 @@ public class Recipient
 
     [JsonPropertyName("email")]
     public string Email { get; set; } = "";
+
+    [JsonPropertyName("jobTitle")]
+    public string JobTitle { get; set; } = "";
 }
 
 public enum UserFilterTypeEnum
