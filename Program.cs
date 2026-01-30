@@ -10,6 +10,11 @@ using Procore.APIClasses;
 var builder = WebApplication.CreateBuilder(args);
 var FRONTEND_URL = AppConfig.FrontendUrl ?? throw new InvalidOperationException("FRONTEND_URL environment variable not configured");
 
+Console.WriteLine($"CurrentDirectory: {Directory.GetCurrentDirectory()}");
+Console.WriteLine($"Data exists: {Directory.Exists("/data")}");
+Console.WriteLine($"Files: {string.Join(", ", Directory.GetFiles("/data"))}");
+
+
 // ------------------------------------------------------------
 // Configure services
 // ------------------------------------------------------------
@@ -20,8 +25,7 @@ builder.Services.AddCors(options =>
     {
         policy.WithOrigins(
                 FRONTEND_URL,
-                "https://sandbox.procore.com",
-                "http://localhost:3000"
+                "https://sandbox.procore.com"
             )
             .AllowAnyHeader()
             .AllowAnyMethod()

@@ -18,7 +18,7 @@ public static class AdminEndpoints
             bool tokenCheck = adminService.ChallengeToken(token);
             if (tokenCheck)
             {
-                return adminService.GenerateAdminToken(token);
+                return token;
             }
             Console.WriteLine("❌ Invalid token");
             return null;
@@ -82,6 +82,7 @@ public static class AdminEndpoints
                         message = "Login successful",
                         token = adminService.GenerateAdminToken()
                     });
+                    return;
                 }
             }
             catch
@@ -93,6 +94,7 @@ public static class AdminEndpoints
                     success = false,
                     message = "Username or password is incorrect",
                 });
+                return;
             }
         });
 
@@ -114,8 +116,9 @@ public static class AdminEndpoints
                 {
                     success = true,
                     message = "Login successful",
-                    token = tokenCheck
+                    token = adminService.GenerateAdminToken(tokenCheck)
                 });
+                return;
             }
             else
             {
@@ -124,8 +127,9 @@ public static class AdminEndpoints
                 await response.WriteAsJsonAsync(new
                 {
                     success = false,
-                    message = "Invalid token",
+                    message = "Session Expired",
                 });
+                return;
             }
         });
 
@@ -143,6 +147,7 @@ public static class AdminEndpoints
             {
                 response.StatusCode = 401;
                 await response.WriteAsJsonAsync(new { error = "invalid token" });
+                return;
             }
 
             try
@@ -152,14 +157,16 @@ public static class AdminEndpoints
                 await response.WriteAsJsonAsync(new
                 {
                     companies,
-                    token = tokenCheck
+                    token = adminService.GenerateAdminToken(tokenCheck)
                 });
+                return;
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"❌ Error loading company data: {ex.Message}");
                 response.StatusCode = 500;
                 await response.WriteAsJsonAsync(new { error = "Failed to load company data" });
+                return;
             }
         });
 
@@ -177,6 +184,7 @@ public static class AdminEndpoints
             {
                 response.StatusCode = 401;
                 await response.WriteAsJsonAsync(new { error = "invalid token" });
+                return;
             }
 
             try
@@ -188,8 +196,9 @@ public static class AdminEndpoints
                 await response.WriteAsJsonAsync(new
                 {
                     projects,
-                    token = tokenCheck
+                    token = adminService.GenerateAdminToken(tokenCheck)
                 });
+                return;
             }
             catch (Exception ex)
             {
@@ -213,6 +222,7 @@ public static class AdminEndpoints
             {
                 response.StatusCode = 401;
                 await response.WriteAsJsonAsync(new { error = "invalid token" });
+                return;
             }
 
             try
@@ -232,7 +242,7 @@ public static class AdminEndpoints
                     await response.WriteAsJsonAsync(new
                     {
                         dashboardData = new AdminDashboardData(),
-                        token = tokenCheck
+                        token = adminService.GenerateAdminToken(tokenCheck)
                     });
                     return;
                 }
@@ -242,8 +252,9 @@ public static class AdminEndpoints
                 await response.WriteAsJsonAsync(new
                 {
                     dashboardData,
-                    token = tokenCheck
+                    token = adminService.GenerateAdminToken(tokenCheck)
                 });
+                return;
             }
             catch (Exception ex)
             {
@@ -267,6 +278,7 @@ public static class AdminEndpoints
             {
                 response.StatusCode = 401;
                 await response.WriteAsJsonAsync(new { error = "invalid token" });
+                return;
             }
 
             JsonElement body;
@@ -315,14 +327,16 @@ public static class AdminEndpoints
                 {
                     success = true,
                     message = "Filters saved successfully",
-                    token = tokenCheck
+                    token = adminService.GenerateAdminToken(tokenCheck)
                 });
+                return;
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"❌ Error saving filters: {ex.Message}");
                 response.StatusCode = 500;
                 await response.WriteAsJsonAsync(new { error = "Failed to save filters" });
+                return;
             }
         });
 
@@ -340,6 +354,7 @@ public static class AdminEndpoints
             {
                 response.StatusCode = 401;
                 await response.WriteAsJsonAsync(new { error = "invalid token" });
+                return;
             }
 
             JsonElement body;
@@ -383,6 +398,7 @@ public static class AdminEndpoints
                 // Validate region values if provided
                 var validRegions = new HashSet<string> { "NSW", "VIC", "QLD", "SA", "WA", "TAS", "NT", "ACT" };
                 var validViewers = new List<ViewerItem>();
+                var errors = new List<string> {};
                 foreach (var viewer in viewers)
                 {
                     Console.WriteLine($"🔍 Validating viewer: {JsonSerializer.Serialize(viewer)}");
@@ -390,10 +406,7 @@ public static class AdminEndpoints
                     {
                         Console.WriteLine($"❌ Invalid region: {viewer.Region}");
                         response.StatusCode = 400;
-                        await response.WriteAsJsonAsync(new
-                        {
-                            error = $"Invalid region '{viewer.Region}'. Must be one of: NSW, VIC, QLD, SA, WA, TAS, NT, ACT"
-                        });
+                        errors.Add($"Invalid region '{viewer.Region}'. Must be one of: NSW, VIC, QLD, SA, WA, TAS, NT, ACT");
                         continue;
                     }
 
@@ -402,10 +415,7 @@ public static class AdminEndpoints
                     {
                         Console.WriteLine($"❌ Invalid viewer type: {viewer.Type}");
                         response.StatusCode = 400;
-                        await response.WriteAsJsonAsync(new
-                        {
-                            error = $"Invalid viewer type '{viewer.Type}'. Must be 'manual' or 'procore'"
-                        });
+                        errors.Add($"Invalid viewer type '{viewer.Type}'. Must be 'manual' or 'procore'");
                         continue;
                     }
 
@@ -414,10 +424,7 @@ public static class AdminEndpoints
                     {
                         Console.WriteLine("❌ Missing recipient information");
                         response.StatusCode = 400;
-                        await response.WriteAsJsonAsync(new
-                        {
-                            error = "Recipient information is required"
-                        });
+                        errors.Add("Recipient information is required");
                         continue;
                     }
 
@@ -430,10 +437,7 @@ public static class AdminEndpoints
                         {
                             Console.WriteLine("❌ Manual viewer missing required fields");
                             response.StatusCode = 400;
-                            await response.WriteAsJsonAsync(new
-                            {
-                                error = "Manual viewers require FirstNames, LastName, and Email"
-                            });
+                            errors.Add("Manual viewers require FirstNames, LastName, and Email");
                             continue;
                         }
                     }
@@ -446,10 +450,7 @@ public static class AdminEndpoints
                         {
                             Console.WriteLine("❌ Procore viewer missing UserId");
                             response.StatusCode = 400;
-                            await response.WriteAsJsonAsync(new
-                            {
-                                error = "Procore viewers require UserId"
-                            });
+                            errors.Add("Procore viewers require UserId");
                             continue;
                         }
                     }
@@ -460,7 +461,7 @@ public static class AdminEndpoints
                 {
                     Console.WriteLine("❌ No valid viewers to save");
                     response.StatusCode = 400;
-                    await response.WriteAsJsonAsync(new { error = $"Unable to save {viewers.Count} invalid viewer(s)" });
+                    await response.WriteAsJsonAsync(new { error = $"Unable to save {viewers.Count} invalid viewer(s)", errors });
                     return;
                 }
 
@@ -482,7 +483,8 @@ public static class AdminEndpoints
                 {
                     success = true,
                     message = viewers.Count == validViewers.Count ? $"{validViewers.Count} Viewer(s) saved successfully" : $"{validViewers.Count} Viewer(s) saved successfully; Unable to save {viewers.Count - validViewers.Count} invalid viewer(s)",
-                    token = tokenCheck
+                    token = adminService.GenerateAdminToken(tokenCheck),
+                    errors
                 });
             }
             catch (Exception ex)
@@ -527,7 +529,7 @@ public static class AdminEndpoints
                 await response.WriteAsJsonAsync(new
                 {
                     value = users,
-                    token = tokenCheck
+                    token = adminService.GenerateAdminToken(tokenCheck)
                 });
             }
             catch (Exception ex)
