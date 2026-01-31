@@ -26,7 +26,9 @@ public static class ApiEndpoints
                 // Update status on procore
                 var patch = new CommitmentContractPatch
             {
-                Status = new ProcoreEnums.PurchaseOrderWorkflowStatus().Submitted,
+                Status = context.CommitmentType == new ProcoreEnums.ProcoreCommitmentType().SubContract ?
+                    new ProcoreEnums.SubcontractWorkflowStatus().AwaitingSignature :
+                    new ProcoreEnums.PurchaseOrderWorkflowStatus().Submitted,
             };
 
                 await procoreService.PatchCommitmentAsync(
@@ -59,8 +61,7 @@ public static class ApiEndpoints
             (success, error) = await procoreService.CheckCommitmentAsync(companyId, projectId, commitmentId);
             if (!success)
             {
-                Console.WriteLine("❌ Invalid context");
-                Console.WriteLine($"API init error: {error}");
+                Console.WriteLine($"❌ Invalid context - API init error: {error}");
                 response.StatusCode = 401;
                 await response.WriteAsJsonAsync(new { error = "Invalid context" });
                 return;
