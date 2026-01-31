@@ -19,17 +19,17 @@ public static class ApiEndpoints
                 var context = new ProcoreContext
                 {
                     CommitmentId = "116891",
-                    CommitmentType = new ProcoreEnums.ProcoreCommitmentType().SubContract,
+                    CommitmentType = ProcoreEnums.ProcoreCommitmentType.PurchaseOrder,
                     CompanyId = "4279506",
                     ProjectId = "310481"
                 };
                 // Update status on procore
                 var patch = new CommitmentContractPatch
-            {
-                Status = context.CommitmentType == new ProcoreEnums.ProcoreCommitmentType().SubContract ?
-                    new ProcoreEnums.SubcontractWorkflowStatus().AwaitingSignature :
-                    new ProcoreEnums.PurchaseOrderWorkflowStatus().Submitted,
-            };
+                {
+                    Status = context.CommitmentType == ProcoreEnums.ProcoreCommitmentType.SubContract ?
+                    ProcoreEnums.SubcontractWorkflowStatus.AwaitingSignature :
+                    ProcoreEnums.PurchaseOrderWorkflowStatus.Submitted,
+                };
 
                 await procoreService.PatchCommitmentAsync(
                     context,
@@ -266,13 +266,13 @@ public static class ApiEndpoints
                 return;
             }
             var chunks = context.CommitmentType.Split('/');
-            if (chunks.FirstOrDefault(new ProcoreEnums.ProcoreCommitmentType().SubContract) != null)
+            if (chunks.Contains(ProcoreEnums.ProcoreCommitmentType.SubContract))
             {
-                context.CommitmentType = new ProcoreEnums.ProcoreCommitmentType().SubContract;
+                context.CommitmentType = ProcoreEnums.ProcoreCommitmentType.SubContract;
             }
-            else if (chunks.FirstOrDefault(new ProcoreEnums.ProcoreCommitmentType().PurchaseOrder) != null)
+            else if (chunks.Contains(ProcoreEnums.ProcoreCommitmentType.PurchaseOrder))
             {
-                context.CommitmentType = new ProcoreEnums.ProcoreCommitmentType().PurchaseOrder;
+                context.CommitmentType = ProcoreEnums.ProcoreCommitmentType.PurchaseOrder;
             }
             else
             {
@@ -328,9 +328,9 @@ public static class ApiEndpoints
             // Update status on procore
             var patch = new CommitmentContractPatch
             {
-                Status = context.CommitmentType == new ProcoreEnums.ProcoreCommitmentType().SubContract ?
-                    new ProcoreEnums.SubcontractWorkflowStatus().AwaitingSignature :
-                    new ProcoreEnums.PurchaseOrderWorkflowStatus().Submitted,
+                Status = context.CommitmentType == ProcoreEnums.ProcoreCommitmentType.SubContract ?
+                    ProcoreEnums.SubcontractWorkflowStatus.AwaitingSignature :
+                    ProcoreEnums.PurchaseOrderWorkflowStatus.Submitted,
             };
 
             await procoreService.PatchCommitmentAsync(

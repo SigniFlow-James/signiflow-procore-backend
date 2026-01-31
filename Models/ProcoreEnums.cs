@@ -20,30 +20,30 @@ public static class ProcoreEnums
 
     public class ProcoreCommitmentType
     {
-        public string SubContract = "work_order_contracts";
-        public string PurchaseOrder = "purchase_order_contracts";
+        public const string SubContract = "work_order_contracts";
+        public const string PurchaseOrder = "purchase_order_contracts";
     }
 
     public class SubcontractWorkflowStatus
     {
-        public string Draft = "Draft";
-        public string AwaitingBids = "Out For Bid";
-        public string AwaitingSignature = "Out For Signature";
-        public string Approved = "Approved";
-        public string Complete = "Complete";
-        public string Terminated = "Terminated";
-        public string Void = "Void";
+        public const string Draft = "Draft";
+        public const string AwaitingBids = "Out For Bid";
+        public const string AwaitingSignature = "Out For Signature";
+        public const string Approved = "Approved";
+        public const string Complete = "Complete";
+        public const string Terminated = "Terminated";
+        public const string Void = "Void";
     }
 
     public class PurchaseOrderWorkflowStatus
     {
-        public string Draft = "Draft";
-        public string Processing = "Processing";
-        public string Submitted = "Submitted";
-        public string PartiallyRecieved = "Partially Recieved";
-        public string Received = "Received";
-        public string Approved = "Approved";
-        public string Closed = "Closed";
+        public const string Draft = "Draft";
+        public const string Processing = "Processing";
+        public const string Submitted = "Submitted";
+        public const string PartiallyRecieved = "Partially Recieved";
+        public const string Received = "Received";
+        public const string Approved = "Approved";
+        public const string Closed = "Closed";
     }
 
     public enum IDType

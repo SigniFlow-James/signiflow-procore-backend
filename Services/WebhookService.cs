@@ -124,9 +124,9 @@ public class SigniflowWebhookProcessor
             // Associate upload to commitment
             var patch = new CommitmentContractPatch
             {
-                Status = metadata.CommitmentType == new ProcoreEnums.ProcoreCommitmentType().SubContract ?
-                    new ProcoreEnums.SubcontractWorkflowStatus().Approved :
-                    new ProcoreEnums.PurchaseOrderWorkflowStatus().Approved,
+                Status = metadata.CommitmentType == ProcoreEnums.ProcoreCommitmentType.SubContract ?
+                    ProcoreEnums.SubcontractWorkflowStatus.Approved :
+                    ProcoreEnums.PurchaseOrderWorkflowStatus.Approved,
                 ContractDate = DateOnly.FromDateTime(webhookEvent.CompletedDate),
                 UploadIds = [uploadUuid]
             };
@@ -149,9 +149,9 @@ public class SigniflowWebhookProcessor
                 }
                 var patch = new CommitmentContractPatch
                 {
-                    Status = metadata.CommitmentType == new ProcoreEnums.ProcoreCommitmentType().SubContract ?
-                        new ProcoreEnums.SubcontractWorkflowStatus().Approved :
-                        new ProcoreEnums.PurchaseOrderWorkflowStatus().Approved,
+                    Status = metadata.CommitmentType == ProcoreEnums.ProcoreCommitmentType.SubContract ?
+                        ProcoreEnums.SubcontractWorkflowStatus.Approved :
+                        ProcoreEnums.PurchaseOrderWorkflowStatus.Approved,
                     ContractDate = DateOnly.FromDateTime(webhookEvent.CompletedDate),
                 };
 
