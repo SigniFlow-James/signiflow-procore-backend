@@ -12,6 +12,37 @@ public static class ApiEndpoints
 {
     public static void MapApiEndpoints(this WebApplication app)
     {
+        app.MapGet("/api/test", async (ProcoreService procoreService) =>
+        {
+            try
+            {
+                var context = new ProcoreContext
+                {
+                    CommitmentId = "116891",
+                    CommitmentType = new ProcoreEnums.ProcoreCommitmentType().SubContract,
+                    CompanyId = "4279506",
+                    ProjectId = "310481"
+                };
+                // Update status on procore
+                var patch = new CommitmentContractPatch
+            {
+                Status = new ProcoreEnums.PurchaseOrderWorkflowStatus().Submitted,
+            };
+
+                await procoreService.PatchCommitmentAsync(
+                    context,
+                    patch
+                );
+
+                Results.Ok("OK");
+            }
+            catch
+            {
+                Results.BadRequest("FAIL");
+            }
+        }
+        );
+
         app.MapPost("/api/init", async (
             HttpRequest request,
             HttpResponse response,
@@ -26,10 +57,10 @@ public static class ApiEndpoints
             bool success;
             string? error;
             (success, error) = await procoreService.CheckCommitmentAsync(companyId, projectId, commitmentId);
-            Console.WriteLine($"API init error: {error}");
             if (!success)
             {
                 Console.WriteLine("❌ Invalid context");
+                Console.WriteLine($"API init error: {error}");
                 response.StatusCode = 401;
                 await response.WriteAsJsonAsync(new { error = "Invalid context" });
                 return;
@@ -64,7 +95,7 @@ public static class ApiEndpoints
             {
                 token = t.ToString();
                 if (adminService.ChallengeAdminToken(token))
-                {   
+                {
                     isAdmin = true;
                 }
                 else if (!adminService.ChallengeUserToken(token))
@@ -194,7 +225,7 @@ public static class ApiEndpoints
 
             var subContractor = JsonSerializer.Deserialize<BasicUserInfo>(subContractorProp);
 
-            if (generalContractor == null || 
+            if (generalContractor == null ||
                 generalContractor.Email == "" ||
                 generalContractor.FirstNames == "" ||
                 generalContractor.LastName == "")
@@ -225,8 +256,8 @@ public static class ApiEndpoints
             if (context == null ||
                 context.CompanyId == "" ||
                 context.ProjectId == "" ||
-                context.CommitmentId == "" || 
-                context.CommitmentType == "" )
+                context.CommitmentId == "" ||
+                context.CommitmentType == "")
             {
                 Console.WriteLine("❌ Invalid Procore context");
                 response.StatusCode = 400;
@@ -249,7 +280,7 @@ public static class ApiEndpoints
                 await response.WriteAsJsonAsync(new { error = "Invalid Procore context" });
                 return;
             }
-            
+
 
             Console.WriteLine("📥 /api/send received");
             Console.WriteLine($"Procore context: {context}");

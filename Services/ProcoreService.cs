@@ -180,9 +180,8 @@ public class ProcoreService
         }
         catch (Exception ex)
         {
-            Console.WriteLine("❌ Error checking commitment:");
             Console.WriteLine(ex);
-            return (false, "Error checking commitment");
+            return (false, ex.Message);
         }
     }
 
