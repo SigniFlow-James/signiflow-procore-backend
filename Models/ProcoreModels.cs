@@ -27,12 +27,14 @@ public abstract class CommitmentBase
 
 public class WorkOrderCommitment : CommitmentBase
 {
-    
+    [JsonPropertyName("status")]
+    public required string Status { get; set; }
 }
 
 public class PurchaseOrderCommitment : CommitmentBase
 {
-    
+    [JsonPropertyName("status")]
+    public required string Status { get; set; }
 }
 
 public class ProcoreUser
