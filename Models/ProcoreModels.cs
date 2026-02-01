@@ -728,9 +728,6 @@ public class FileDetail
     [JsonPropertyName("checked_out_by")]
     public required User CheckedOutBy { get; set; }
 
-    [JsonPropertyName("checked_out_until")]
-    public DateTime CheckedOutUntil { get; set; }
-
     [JsonPropertyName("current_version")]
     public required FileVersion CurrentVersion { get; set; }
 
