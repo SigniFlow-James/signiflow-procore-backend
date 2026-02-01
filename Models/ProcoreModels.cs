@@ -132,7 +132,7 @@ public abstract class CommitmentBase
     public SimpleVendor Vendor { get; set; } = default!;
 
     [JsonPropertyName("prostore_file_ids")]
-    public List<long> ProstoreFileIds { get; set; } = [];
+    public List<string> ProstoreFileIds { get; set; } = [];
 }
 
 
@@ -580,40 +580,6 @@ public class UploadSegmentHeaders
 }
 
 
-
-public class DocumentPayload
-{
-    [JsonPropertyName("parent_id")]
-    public long ParentId { get; set; }
-
-    [JsonPropertyName("name")]
-    public string Name { get; set; } = string.Empty;
-
-    [JsonPropertyName("is_tracked")]
-    public bool IsTracked { get; set; }
-
-    [JsonPropertyName("explicit_permissions")]
-    public bool ExplicitPermissions { get; set; }
-
-    [JsonPropertyName("description")]
-    public string Description { get; set; } = string.Empty;
-
-    [JsonPropertyName("unique_name")]
-    public bool UniqueName { get; set; }
-
-    [JsonPropertyName("upload_uuid")]
-    public string UploadUuid { get; set; } = string.Empty;
-
-    /// <summary>
-    /// Dynamic Procore custom fields:
-    /// key = "custom_field_%{custom_field_definition_id}"
-    /// value = string | number | bool
-    /// </summary>
-    [JsonExtensionData]
-    public Dictionary<string, object>? CustomFields { get; set; }
-}
-
-
 public class DocumentFolderPayload
 {
     public string? name;
@@ -808,7 +774,7 @@ public class FileVersion
 public class ProstoreFile
 {
     [JsonPropertyName("id")]
-    public required long Id { get; set; }
+    public required string Id { get; set; }
 
     [JsonPropertyName("name")]
     public required string Name { get; set; }

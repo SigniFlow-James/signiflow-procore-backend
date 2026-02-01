@@ -431,7 +431,11 @@ public class ProcoreService
             response.EnsureSuccessStatusCode();
 
             var json = await response.Content.ReadAsStringAsync();
-            var files = JsonSerializer.Deserialize<FileRoot>(json);
+            var options = new JsonSerializerOptions
+            {
+                NumberHandling = JsonNumberHandling.AllowReadingFromString
+            };
+            var files = JsonSerializer.Deserialize<FileRoot>(json, options);
             if (files is null) return [];
             return files.Data;
         }
@@ -446,7 +450,7 @@ public class ProcoreService
 
     public List<FileItem> FindFilesFromProstoreIds(
     List<FileItem> files,
-    List<long> ids)
+    List<string> ids)
     {
         List<FileItem> filteredFiles = [];
         foreach (var file in files)
