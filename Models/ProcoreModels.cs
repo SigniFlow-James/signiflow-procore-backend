@@ -12,28 +12,218 @@ public class ProcoreSession
     public long? ExpiresAt { get; set; }
 }
 
-/// <summary>
-/// Procore User Model
-/// </summary>
-
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "type")]
-[JsonDerivedType(typeof(WorkOrderCommitment), "WorkOrderContract")]
 [JsonDerivedType(typeof(PurchaseOrderCommitment), "PurchaseOrderContract")]
+[JsonDerivedType(typeof(WorkOrderCommitment), "WorkOrderContract")]
 public abstract class CommitmentBase
 {
+    [JsonPropertyName("id")]
+    public string Id { get; set; } = default!;
+
+    [JsonPropertyName("number")]
+    public string Number { get; set; } = default!;
+
     public string Type { get; set; } = default!;
+
+    [JsonPropertyName("status")]
+    public string Status { get; set; } = default!;
+
+    [JsonPropertyName("title")]
+    public string Title { get; set; } = default!;
+
+    [JsonPropertyName("description")]
+    public string? Description { get; set; }
+
+    [JsonPropertyName("private")]
+    public bool Private { get; set; }
+
+    [JsonPropertyName("executed")]
+    public bool Executed { get; set; }
+
+    [JsonPropertyName("execution_date")]
+    public DateOnly? ExecutionDate { get; set; }
+
+    [JsonPropertyName("approval_letter_date")]
+    public DateOnly? ApprovalLetterDate { get; set; }
+
+    [JsonPropertyName("contract_date")]
+    public DateOnly? ContractDate { get; set; }
+
+    [JsonPropertyName("issued_on_date")]
+    public DateOnly? IssuedOnDate { get; set; }
+
+    [JsonPropertyName("letter_of_intent_date")]
+    public DateOnly? LetterOfIntentDate { get; set; }
+
+    [JsonPropertyName("returned_date")]
+    public DateOnly? ReturnedDate { get; set; }
+
+    [JsonPropertyName("signed_contract_received_date")]
+    public DateOnly? SignedContractReceivedDate { get; set; }
+
+    [JsonPropertyName("accounting_method")]
+    public string AccountingMethod { get; set; } = default!;
+
+    [JsonPropertyName("retainage_percent")]
+    public string RetainagePercent { get; set; } = default!;
+
+    [JsonPropertyName("allow_comments")]
+    public bool AllowComments { get; set; }
+
+    [JsonPropertyName("allow_markups")]
+    public bool AllowMarkups { get; set; }
+
+    [JsonPropertyName("allow_payment_applications")]
+    public bool AllowPaymentApplications { get; set; }
+
+    [JsonPropertyName("allow_payments")]
+    public bool AllowPayments { get; set; }
+
+    [JsonPropertyName("change_order_level_of_detail")]
+    public string ChangeOrderLevelOfDetail { get; set; } = default!;
+
+    [JsonPropertyName("display_materials_retainage")]
+    public bool DisplayMaterialsRetainage { get; set; }
+
+    [JsonPropertyName("display_work_retainage")]
+    public bool DisplayWorkRetainage { get; set; }
+
+    [JsonPropertyName("enable_ssov")]
+    public bool EnableSsov { get; set; }
+
+    [JsonPropertyName("show_cost_code_on_pdf")]
+    public bool ShowCostCodeOnPdf { get; set; }
+
+    [JsonPropertyName("show_line_items_to_non_admins")]
+    public bool ShowLineItemsToNonAdmins { get; set; }
+
+    [JsonPropertyName("signature_required")]
+    public bool SignatureRequired { get; set; }
+
+    [JsonPropertyName("ssr_enabled")]
+    public bool SsrEnabled { get; set; }
+
+    [JsonPropertyName("accessor_ids")]
+    public List<string> AccessorIds { get; set; } = [];
+
+    [JsonPropertyName("bill_recipient_ids")]
+    public List<string> BillRecipientIds { get; set; } = [];
+
+    [JsonPropertyName("custom_fields")]
+    public Dictionary<string, string?> CustomFields { get; set; } = [];
+
+    [JsonPropertyName("currency_configuration")]
+    public CurrencyConfiguration CurrencyConfiguration { get; set; } = default!;
+
+    [JsonPropertyName("external_data")]
+    public ExternalData ExternalData { get; set; } = default!;
+
+    [JsonPropertyName("grand_total")]
+    public string GrandTotal { get; set; } = default!;
+
+    [JsonPropertyName("created_at")]
+    public DateTime CreatedAt { get; set; }
+
+    [JsonPropertyName("updated_at")]
+    public DateTime UpdatedAt { get; set; }
+
+    [JsonPropertyName("created_by")]
+    public SimpleUser CreatedBy { get; set; } = default!;
+
+    [JsonPropertyName("vendor")]
+    public SimpleVendor Vendor { get; set; } = default!;
+
+    [JsonPropertyName("prostore_file_ids")]
+    public List<long> ProstoreFileIds { get; set; } = [];
 }
 
-public class WorkOrderCommitment : CommitmentBase
+
+
+public sealed class WorkOrderCommitment : CommitmentBase
 {
-    [JsonPropertyName("status")]
-    public required string Status { get; set; }
+    [JsonPropertyName("actual_completion_date")]
+    public DateOnly? ActualCompletionDate { get; set; }
+
+    [JsonPropertyName("contract_start_date")]
+    public DateOnly? ContractStartDate { get; set; }
+
+    [JsonPropertyName("contract_estimated_completion_date")]
+    public DateOnly? ContractEstimatedCompletionDate { get; set; }
+
+    [JsonPropertyName("inclusions")]
+    public string? Inclusions { get; set; }
+
+    [JsonPropertyName("exclusions")]
+    public string? Exclusions { get; set; }
+
+    [JsonPropertyName("billing_schedule_of_values_status")]
+    public string BillingScheduleOfValuesStatus { get; set; } = default!;
 }
 
-public class PurchaseOrderCommitment : CommitmentBase
+
+
+public sealed class PurchaseOrderCommitment : CommitmentBase
 {
-    [JsonPropertyName("status")]
-    public required string Status { get; set; }
+    [JsonPropertyName("assignee")]
+    public SimpleUser? Assignee { get; set; }
+
+    [JsonPropertyName("delivery_date")]
+    public DateOnly? DeliveryDate { get; set; }
+
+    [JsonPropertyName("bill_to_address")]
+    public string BillToAddress { get; set; } = default!;
+
+    [JsonPropertyName("ship_to_address")]
+    public string ShipToAddress { get; set; } = default!;
+
+    [JsonPropertyName("ship_via")]
+    public string? ShipVia { get; set; }
+
+    [JsonPropertyName("payment_terms")]
+    public string? PaymentTerms { get; set; }
+}
+
+
+public sealed class CurrencyConfiguration
+{
+    [JsonPropertyName("base_currency_iso_code")]
+    public string BaseCurrencyIsoCode { get; set; } = default!;
+
+    [JsonPropertyName("currency_iso_code")]
+    public string CurrencyIsoCode { get; set; } = default!;
+
+    [JsonPropertyName("currency_exchange_rate")]
+    public string CurrencyExchangeRate { get; set; } = default!;
+}
+
+public sealed class ExternalData
+{
+    [JsonPropertyName("origin_id")]
+    public string? OriginId { get; set; }
+
+    [JsonPropertyName("origin_data")]
+    public string? OriginData { get; set; }
+
+    [JsonPropertyName("origin_code")]
+    public string? OriginCode { get; set; }
+}
+
+public sealed class SimpleUser
+{
+    [JsonPropertyName("id")]
+    public string Id { get; set; } = default!;
+
+    [JsonPropertyName("name")]
+    public string Name { get; set; } = default!;
+}
+
+public sealed class SimpleVendor
+{
+    [JsonPropertyName("id")]
+    public string Id { get; set; } = default!;
+
+    [JsonPropertyName("name")]
+    public string Name { get; set; } = default!;
 }
 
 public class ProcoreUser
@@ -780,18 +970,6 @@ public sealed class WorkOrderContractData
 
     [JsonPropertyName("vendor")]
     public VendorID Vendor { get; init; } = default!;
-}
-
-public sealed class CurrencyConfiguration
-{
-    [JsonPropertyName("base_currency_iso_code")]
-    public string BaseCurrencyIsoCode { get; init; } = default!;
-
-    [JsonPropertyName("currency_iso_code")]
-    public string CurrencyIsoCode { get; init; } = default!;
-
-    [JsonPropertyName("currency_exchange_rate")]
-    public string CurrencyExchangeRate { get; init; } = default!;
 }
 
 public sealed class CreatedBy
