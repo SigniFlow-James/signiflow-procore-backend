@@ -132,7 +132,7 @@ public abstract class CommitmentBase
     public SimpleVendor Vendor { get; set; } = default!;
 
     [JsonPropertyName("prostore_file_ids")]
-    public List<string> ProstoreFileIds { get; set; } = [];
+    public List<long> ProstoreFileIds { get; set; } = [];
 }
 
 
@@ -808,7 +808,7 @@ public class FileVersion
 public class ProstoreFile
 {
     [JsonPropertyName("id")]
-    public required string Id { get; set; }
+    public required long Id { get; set; }
 
     [JsonPropertyName("name")]
     public required string Name { get; set; }
