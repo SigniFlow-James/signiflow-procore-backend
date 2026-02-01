@@ -12,9 +12,6 @@ public class ProcoreSession
     public long? ExpiresAt { get; set; }
 }
 
-[JsonPolymorphic(TypeDiscriminatorPropertyName = "type")]
-[JsonDerivedType(typeof(PurchaseOrderCommitment), "PurchaseOrderContract")]
-[JsonDerivedType(typeof(WorkOrderCommitment), "WorkOrderContract")]
 public abstract class CommitmentBase
 {
     [JsonPropertyName("id")]
@@ -23,6 +20,7 @@ public abstract class CommitmentBase
     [JsonPropertyName("number")]
     public string Number { get; set; } = default!;
 
+    [JsonPropertyName("type")]
     public string Type { get; set; } = default!;
 
     [JsonPropertyName("status")]

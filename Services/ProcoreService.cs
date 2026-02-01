@@ -180,18 +180,16 @@ public class ProcoreService
             var json = await response.Content.ReadAsStringAsync();
             using var doc = JsonDocument.Parse(json);
             var data = doc.RootElement.GetProperty("data");
-            Console.WriteLine(data);
-            var commitment = JsonSerializer.Deserialize<CommitmentBase>(data);
-           
-            Console.WriteLine(commitment);
-            if (commitment is WorkOrderCommitment)
+            var type = data.GetProperty("type");
+
+            if (type.ToString() == ProcoreEnums.ProcoreCommitmentType.WorkOrder)
             {
-                commitment.Type = ProcoreEnums.ProcoreCommitmentType.WorkOrder;
+                var commitment = JsonSerializer.Deserialize<WorkOrderCommitment>(data);
                 return (commitment, null);
             }
-            else if (commitment is PurchaseOrderCommitment)
+            else if (type.ToString() == ProcoreEnums.ProcoreCommitmentType.WorkOrder)
             {
-                commitment.Type = ProcoreEnums.ProcoreCommitmentType.PurchaseOrder;
+                var commitment = JsonSerializer.Deserialize<PurchaseOrderCommitment>(data);
                 return (commitment, null);
             }
             else
