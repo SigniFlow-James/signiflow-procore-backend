@@ -418,7 +418,9 @@ public class ProcoreService
     string projectId
     )
     {
-        var response = await _procoreClient.SendAsync(
+        try
+        {
+            var response = await _procoreClient.SendAsync(
             HttpMethod.Get,
             "2.0",
             _oauthSession.Procore.AccessToken,
@@ -426,12 +428,20 @@ public class ProcoreService
             companyId
         );
 
-        response.EnsureSuccessStatusCode();
+            response.EnsureSuccessStatusCode();
 
-        var json = await response.Content.ReadAsStringAsync();
-        var files = JsonSerializer.Deserialize<FileRoot>(json);
-        if (files is null) return [];
-        return files.Data;
+            var json = await response.Content.ReadAsStringAsync();
+            var files = JsonSerializer.Deserialize<FileRoot>(json);
+            if (files is null) return [];
+            return files.Data;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("No worky");
+            Console.WriteLine(ex);
+            return [];
+        }
+
     }
 
     public List<FileItem> FindFilesFromProstoreIds(

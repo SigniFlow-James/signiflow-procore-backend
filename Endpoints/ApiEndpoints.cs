@@ -22,22 +22,26 @@ public static class ApiEndpoints
                     CommitmentId = "112291",
                     ProjectId = "310481",
                     CompanyId = "4279506",
-                    CommitmentType = ""
+                    CommitmentType = ProcoreEnums.ProcoreCommitmentType.WorkOrder
                 };
 
-                CommitmentBase? commitment;
-                string? error;
-                (commitment, error) = await procoreService.GetCommitmentAsync(context.CompanyId, context.ProjectId, context.CommitmentId);
-                if (commitment == null)
-                {
-                    Console.WriteLine("❌ Commitment 1 returned null");
-                    return;
-                }
-                context.CommitmentType = commitment.Type;
-                Console.WriteLine(JsonSerializer.Serialize(commitment));
+                // CommitmentBase? commitment;
+                // string? error;
+                // (commitment, error) = await procoreService.GetCommitmentAsync(context.CompanyId, context.ProjectId, context.CommitmentId);
+                // if (commitment == null)
+                // {
+                //     Console.WriteLine("❌ Commitment 1 returned null");
+                //     return;
+                // }
+                // context.CommitmentType = commitment.Type;
+                // Console.WriteLine(JsonSerializer.Serialize(commitment));
+                Console.WriteLine("Test 1 Sending");
+
                 var files = await procoreService.GetDocumentFilesAsync(context.CompanyId, context.ProjectId);
+
+                Console.WriteLine("Test 1 Recieved");
                 Console.WriteLine($"Found {files.Count} file(s)");
-                files = procoreService.FindFilesFromProstoreIds(files, commitment.ProstoreFileIds);
+                files = procoreService.FindFilesFromProstoreIds(files, [9277264,9312121]);
                 Console.WriteLine($"Filtered to {files.Count} file(s)");
 
                 Results.Ok("OK");
