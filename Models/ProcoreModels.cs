@@ -586,59 +586,6 @@ public class DocumentFolderPayload
     public string? parent_id;
 }
 
-public class DocumentFolder
-{
-    [JsonPropertyName("id")]
-    public int Id { get; set; }
-
-    [JsonPropertyName("name")]
-    public string? Name { get; set; }
-
-    [JsonPropertyName("parent_id")]
-    public int? ParentId { get; set; }
-
-    [JsonPropertyName("private")]
-    public bool Private { get; set; }
-
-    [JsonPropertyName("updated_at")]
-    public DateTime UpdatedAt { get; set; }
-
-    [JsonPropertyName("is_tracked")]
-    public bool IsTracked { get; set; }
-
-    [JsonPropertyName("tracked_folder")]
-    public object? TrackedFolder { get; set; }
-
-    [JsonPropertyName("name_with_path")]
-    public string? NameWithPath { get; set; }
-
-    [JsonPropertyName("folders")]
-    public List<DocumentFolder>? Folders { get; set; }
-
-    [JsonPropertyName("files")]
-    public List<FileItem>? Files { get; set; }
-
-    [JsonPropertyName("read_only")]
-    public bool ReadOnly { get; set; }
-
-    [JsonPropertyName("is_deleted")]
-    public bool IsDeleted { get; set; }
-
-    [JsonPropertyName("is_recycle_bin")]
-    public bool IsRecycleBin { get; set; }
-
-    [JsonPropertyName("has_children")]
-    public bool HasChildren { get; set; }
-
-    [JsonPropertyName("has_children_files")]
-    public bool HasChildrenFiles { get; set; }
-
-    [JsonPropertyName("has_children_folders")]
-    public bool HasChildrenFolders { get; set; }
-
-    [JsonPropertyName("custom_fields")]
-    public Dictionary<string, CustomField>? CustomFields { get; set; }
-}
 public class FileRoot
 {
     [JsonPropertyName("data")]
@@ -648,7 +595,7 @@ public class FileRoot
 public class FileItem
 {
     [JsonPropertyName("id")]
-    public required int Id { get; set; }
+    public required string Id { get; set; }
 
     [JsonPropertyName("name")]
     public required string Name { get; set; }
@@ -991,7 +938,6 @@ public sealed class VendorID
     [JsonPropertyName("id")]
     public int Id { get; init; } = default!;
 }
-
 
 // ============================================================
 // END FILE: Models/ProcoreModels.cs
