@@ -181,6 +181,8 @@ public class ProcoreService
             using var doc = JsonDocument.Parse(json);
             var data = doc.RootElement.GetProperty("data");
             var type = data.GetProperty("type");
+            Console.WriteLine(data);
+            Console.WriteLine(type);
 
             if (type.ToString() == ProcoreEnums.ProcoreCommitmentType.WorkOrder)
             {

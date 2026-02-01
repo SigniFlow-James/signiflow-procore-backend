@@ -93,7 +93,7 @@ public static class ApiEndpoints
                 (commitment, error) = await procoreService.GetCommitmentAsync(context.CompanyId, context.ProjectId, context.CommitmentId);
                 if (commitment == null)
                 {
-                    Console.WriteLine("❌ Commitment 1 returned null");
+                    Console.WriteLine("❌ Commitment 2 returned null");
                     return;
                 }
                 context.CommitmentType = commitment.Type;
