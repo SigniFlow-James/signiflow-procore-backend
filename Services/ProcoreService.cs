@@ -180,9 +180,9 @@ public class ProcoreService
             var json = await response.Content.ReadAsStringAsync();
             using var doc = JsonDocument.Parse(json);
             var data = doc.RootElement.GetProperty("data");
-
+            Console.WriteLine(data);
             var commitment = JsonSerializer.Deserialize<CommitmentBase>(data);
-            Console.WriteLine(json);
+           
             Console.WriteLine(commitment);
             if (commitment is WorkOrderCommitment)
             {
