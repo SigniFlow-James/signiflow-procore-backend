@@ -267,11 +267,13 @@ public static class ApiEndpoints
             HttpResponse response,
             AuthService authService,
             ProcoreService procoreService,
-            SigniflowService signiflowService,
-            AdminService adminService
+            AdminService adminService,
+            ISendRequestQueue sendQueue
         ) =>
         {
             Console.WriteLine("📥 /api/send received");
+            
+            // User token check
             var userTokenCheck = adminService.UserTokenCheck(request);
             if (userTokenCheck == null)
             {
@@ -289,6 +291,7 @@ public static class ApiEndpoints
                 await response.WriteAsJsonAsync(new { error = "Authentication failed" });
                 return;
             }
+
             // Parse body
             JsonElement body;
             try
@@ -302,7 +305,8 @@ public static class ApiEndpoints
                 return;
             }
 
-            Console.WriteLine($"📥 form: {body}");
+            Console.WriteLine($"📥 Received body");
+            
             if (!body.TryGetProperty("form", out var form) ||
                 !body.TryGetProperty("context", out var contextProp))
             {
@@ -312,7 +316,7 @@ public static class ApiEndpoints
                 return;
             }
 
-            // Extract info from form
+            // Extract General Contractor info
             if (!form.TryGetProperty("generalContractorSigner", out var generalContractorProp))
             {
                 Console.WriteLine("❌ Missing General Contractor information");
@@ -323,6 +327,7 @@ public static class ApiEndpoints
 
             var generalContractor = JsonSerializer.Deserialize<BasicUserInfo>(generalContractorProp);
 
+            // Extract Sub Contractor info
             if (!form.TryGetProperty("subContractorSigner", out var subContractorProp))
             {
                 Console.WriteLine("❌ Missing Sub Contractor information");
@@ -333,10 +338,11 @@ public static class ApiEndpoints
 
             var subContractor = JsonSerializer.Deserialize<BasicUserInfo>(subContractorProp);
 
+            // Validate General Contractor
             if (generalContractor == null ||
-                generalContractor.Email == "" ||
-                generalContractor.FirstNames == "" ||
-                generalContractor.LastName == "")
+                string.IsNullOrWhiteSpace(generalContractor.Email) ||
+                string.IsNullOrWhiteSpace(generalContractor.FirstNames) ||
+                string.IsNullOrWhiteSpace(generalContractor.LastName))
             {
                 Console.WriteLine("❌ Missing General Contractor names or email");
                 response.StatusCode = 400;
@@ -344,138 +350,71 @@ public static class ApiEndpoints
                 return;
             }
 
+            // Validate Sub Contractor
             if (subContractor == null ||
-                subContractor.Email == "" ||
-                subContractor.FirstNames == "" ||
-                subContractor.LastName == "")
+                string.IsNullOrWhiteSpace(subContractor.Email) ||
+                string.IsNullOrWhiteSpace(subContractor.FirstNames) ||
+                string.IsNullOrWhiteSpace(subContractor.LastName))
             {
                 Console.WriteLine("❌ Missing Sub Contractor names or email");
                 response.StatusCode = 400;
                 await response.WriteAsJsonAsync(new { error = "Sub contractor names or email are missing" });
                 return;
             }
+
+            // Extract custom message (optional)
             var customMessage = form.TryGetProperty("customMessage", out var msgProp)
                 ? msgProp.GetString()
                 : null;
 
-
-            // Extract Procore context
-            var context = JsonSerializer.Deserialize<ProcoreContext>(contextProp);
+            // Extract and validate Procore context
+            var context = JsonSerializer.Deserialize<Procore.APIClasses.ProcoreContext>(contextProp);
             if (context == null ||
-                context.CompanyId == "" ||
-                context.ProjectId == "" ||
-                context.CommitmentId == "" ||
-                context.CommitmentType == "")
+                string.IsNullOrWhiteSpace(context.CompanyId) ||
+                string.IsNullOrWhiteSpace(context.ProjectId) ||
+                string.IsNullOrWhiteSpace(context.CommitmentId) ||
+                string.IsNullOrWhiteSpace(context.CommitmentType))
             {
                 Console.WriteLine("❌ Invalid Procore context");
                 response.StatusCode = 400;
                 await response.WriteAsJsonAsync(new { error = "Invalid Procore context" });
                 return;
             }
-            // var chunks = context.CommitmentType.Split('/');
-            // if (chunks.Contains(ProcoreEnums.ProcoreCommitmentType.WorkOrder))
-            // {
-            //     context.CommitmentType = ProcoreEnums.ProcoreCommitmentType.WorkOrder;
-            // }
-            // else if (chunks.Contains(ProcoreEnums.ProcoreCommitmentType.PurchaseOrder))
-            // {
-            //     context.CommitmentType = ProcoreEnums.ProcoreCommitmentType.PurchaseOrder;
-            // }
-            // else
-            // {
-            //     Console.WriteLine("❌ Commitment doesn't match a known type");
-            //     response.StatusCode = 400;
-            //     await response.WriteAsJsonAsync(new { error = "Invalid Procore context" });
-            //     return;
-            // }
 
-            // Get full commitment info
-            CommitmentBase? commitment;
-            string? error;
-            (commitment, error) = await procoreService.GetCommitmentAsync(context.CompanyId, context.ProjectId, context.CommitmentId);
-            if (commitment == null)
+            // Verify commitment exists (quick validation before queuing)
+            var (commitment, error) = await procoreService.GetCommitmentAsync(
+                context.CompanyId,
+                context.ProjectId,
+                context.CommitmentId);
+
+            if (commitment == null || error != null)
             {
-                Console.WriteLine("❌ Commitment returned null");
+                Console.WriteLine($"❌ Commitment validation failed: {error ?? "Commitment not found"}");
                 response.StatusCode = 400;
-                await response.WriteAsJsonAsync(new { error = "Invalid Procore context" });
+                await response.WriteAsJsonAsync(new { error = error ?? "Invalid commitment" });
                 return;
             }
 
-            context.CommitmentType = commitment.Type;
-
-            Console.WriteLine("📥 /api/send received");
-            Console.WriteLine($"Procore context: {JsonSerializer.Serialize(context)}");
-            Console.WriteLine(new { generalContractor, subContractor });
-
-            // Export PDF from Procore
-            var (pdfBytes, exportError) = await procoreService.ExportCommitmentPdfAsync(
-                context
-            );
-
-            if (exportError != null)
+            // All validation passed - enqueue the request for background processing
+            var sendRequest = new SendRequest
             {
-                response.StatusCode = 500;
-                await response.WriteAsJsonAsync(new { error = exportError });
-                return;
-            }
+                GeneralContractor = generalContractor,
+                SubContractor = subContractor,
+                Context = context,
+                CustomMessage = customMessage,
+            };
 
-            Console.WriteLine("📤 Sending PDF to SigniFlow...");
+            await sendQueue.EnqueueAsync(sendRequest);
 
-            // Send to SigniFlow
-            var documentName = $"Procore_Commitment_{context.CommitmentId}";
-            var viewers = await adminService.GetAllViewersAsync(context.CompanyId);
+            Console.WriteLine($"✅ Send request queued for commitment: {context.CommitmentId}");
 
-            var (workflowResponse, signiflowError) = await signiflowService.CreateWorkflowAsync(
-                pdfBytes!,
-                context,
-                documentName,
-                generalContractor,
-                subContractor,
-                viewers,
-                customMessage ?? ""
-            );
-
-            if (signiflowError != null)
-            {
-                response.StatusCode = 500;
-                await response.WriteAsJsonAsync(new { error = signiflowError });
-                return;
-            }
-
-            Console.WriteLine("✅ Workflow created successfully");
-            Console.WriteLine($"Document ID: {workflowResponse!.DocIDField}");
-
-            // Update status on procore
-            CommitmentPatchBase patch;
-            if (context.CommitmentType == ProcoreEnums.ProcoreCommitmentType.WorkOrder)
-            {
-                patch = new WorkOrderPatch
-                {
-                    Status = ProcoreEnums.SubcontractWorkflowStatus.AwaitingSignature,
-                    IssuedOnDate = DateOnly.FromDateTime(DateTime.Today)
-                };
-            }
-            else
-            {
-                patch = new PurchaseOrderPatch
-                {
-                    Status = ProcoreEnums.PurchaseOrderWorkflowStatus.Submitted,
-                    IssuedOnDate = DateOnly.FromDateTime(DateTime.Today)
-                };
-            }
-
-            await procoreService.PatchCommitmentAsync(
-                context,
-                patch
-            );
-
-            response.StatusCode = 200;
+            // Return success immediately
+            response.StatusCode = 202; // 202 Accepted - request queued for processing
             await response.WriteAsJsonAsync(new
             {
                 success = true,
-                pdfSize = pdfBytes!.Length,
-                documentId = workflowResponse.DocIDField,
-                documentName,
+                message = "Sent successfully!",
+                commitmentId = context.CommitmentId,
                 token = adminService.GenerateUserToken(userTokenCheck)
             });
         });

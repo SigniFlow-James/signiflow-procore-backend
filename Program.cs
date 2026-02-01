@@ -41,12 +41,13 @@ builder.Services.AddRouting();
 // Register services
 // ------------------------------------------------------------
 
+// Generic
 builder.Services.AddSingleton<OAuthSession>();
 builder.Services.AddSingleton<AuthService>();
-builder.Services.AddSingleton<ISigniflowWebhookQueue, SigniflowWebhookQueue>();
 builder.Services.AddSingleton<AdminService>();
-builder.Services.AddScoped<SigniflowWebhookProcessor>();
-builder.Services.AddHostedService<SigniflowWebhookWorker>();
+builder.Services.AddSingleton<ISendRequestQueue, SendRequestQueue>();
+builder.Services.AddHostedService<SendRequestWorker>();
+builder.Services.AddScoped<SendRequestProcessor>();
 
 
 // Register Procore Services
@@ -69,6 +70,9 @@ builder.Services.AddHttpClient<SigniflowApiClient>(client =>
     );
 });
 builder.Services.AddScoped<SigniflowService>();
+builder.Services.AddScoped<SigniflowWebhookProcessor>();
+builder.Services.AddSingleton<ISigniflowWebhookQueue, SigniflowWebhookQueue>();
+builder.Services.AddHostedService<SigniflowWebhookWorker>();
 
 var app = builder.Build();
 
