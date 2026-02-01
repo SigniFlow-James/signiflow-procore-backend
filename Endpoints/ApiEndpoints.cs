@@ -19,7 +19,7 @@ public static class ApiEndpoints
                 Console.WriteLine("Test 1");
                 var context = new ProcoreContext
                 {
-                    CommitmentId = "116891",
+                    CommitmentId = "112291",
                     ProjectId = "310481",
                     CompanyId = "4279506",
                     CommitmentType = ""
@@ -34,114 +34,11 @@ public static class ApiEndpoints
                     return;
                 }
                 context.CommitmentType = commitment.Type;
-
-                CommitmentPatchBase patch;
-                if (context.CommitmentType == ProcoreEnums.ProcoreCommitmentType.WorkOrder)
-                {
-                    patch = new WorkOrderPatch
-                    {
-                        Status = ProcoreEnums.SubcontractWorkflowStatus.AwaitingSignature,
-                        IssuedOnDate = DateOnly.FromDateTime(DateTime.Today)
-                    };
-                }
-                else
-                {
-                    patch = new PurchaseOrderPatch
-                    {
-                        Status = ProcoreEnums.PurchaseOrderWorkflowStatus.Submitted,
-                        IssuedOnDate = DateOnly.FromDateTime(DateTime.Today)
-                    };
-                }
-
-                await procoreService.PatchCommitmentAsync(
-                    context,
-                    patch
-                );
-
-                Console.WriteLine("Test 2");
-                if (context.CommitmentType == ProcoreEnums.ProcoreCommitmentType.WorkOrder)
-                {
-                    patch = new WorkOrderPatch
-                    {
-                        Status = ProcoreEnums.SubcontractWorkflowStatus.Approved,
-                        SignedContractReceivedDate = DateOnly.FromDateTime(DateTime.Today)
-                    };
-                }
-                else
-                {
-                    patch = new PurchaseOrderPatch
-                    {
-                        Status = ProcoreEnums.SubcontractWorkflowStatus.Approved,
-                        SignedPurchaseOrderReceivedDate = DateOnly.FromDateTime(DateTime.Today)
-                    };
-                }
-
-                await procoreService.PatchCommitmentAsync(
-                        context,
-                        patch
-                    );
-
-                Console.WriteLine("Test 3");
-                context = new ProcoreContext
-                {
-                    CommitmentId = "112291",
-                    ProjectId = "310481",
-                    CompanyId = "4279506",
-                    CommitmentType = ""
-                };
-
-                (commitment, error) = await procoreService.GetCommitmentAsync(context.CompanyId, context.ProjectId, context.CommitmentId);
-                if (commitment == null)
-                {
-                    Console.WriteLine("❌ Commitment 2 returned null");
-                    return;
-                }
-                context.CommitmentType = commitment.Type;
-
-                if (context.CommitmentType == ProcoreEnums.ProcoreCommitmentType.WorkOrder)
-                {
-                    patch = new WorkOrderPatch
-                    {
-                        Status = ProcoreEnums.SubcontractWorkflowStatus.AwaitingSignature,
-                        IssuedOnDate = DateOnly.FromDateTime(DateTime.Today)
-                    };
-                }
-                else
-                {
-                    patch = new PurchaseOrderPatch
-                    {
-                        Status = ProcoreEnums.PurchaseOrderWorkflowStatus.Submitted,
-                        IssuedOnDate = DateOnly.FromDateTime(DateTime.Today)
-                    };
-                }
-
-                await procoreService.PatchCommitmentAsync(
-                    context,
-                    patch
-                );
-
-                Console.WriteLine("Test 4");
-                if (context.CommitmentType == ProcoreEnums.ProcoreCommitmentType.WorkOrder)
-                {
-                    patch = new WorkOrderPatch
-                    {
-                        Status = ProcoreEnums.SubcontractWorkflowStatus.Approved,
-                        SignedContractReceivedDate = DateOnly.FromDateTime(DateTime.Today)
-                    };
-                }
-                else
-                {
-                    patch = new PurchaseOrderPatch
-                    {
-                        Status = ProcoreEnums.SubcontractWorkflowStatus.Approved,
-                        SignedPurchaseOrderReceivedDate = DateOnly.FromDateTime(DateTime.Today)
-                    };
-                }
-
-                await procoreService.PatchCommitmentAsync(
-                        context,
-                        patch
-                    );
+                Console.WriteLine(JsonSerializer.Serialize(commitment));
+                var files = await procoreService.GetDocumentFilesAsync(context.CompanyId, context.ProjectId);
+                Console.WriteLine($"Found {files.Count} file(s)");
+                files = procoreService.FindFilesFromProstoreIds(files, commitment.ProstoreFileIds);
+                Console.WriteLine($"Filtered to {files.Count} file(s)");
 
                 Results.Ok("OK");
             }

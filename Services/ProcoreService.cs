@@ -413,135 +413,48 @@ public class ProcoreService
     // Get document folders in Procore project
     // ------------------------------------------------------------
 
-    private async Task<DocumentFolder> GetDocumentFoldersAsync(
-    string projectId)
+    public async Task<List<FileItem>> GetDocumentFilesAsync(
+    string companyId,
+    string projectId
+    )
     {
         var response = await _procoreClient.SendAsync(
             HttpMethod.Get,
-            "1.0",
+            "2.0",
             _oauthSession.Procore.AccessToken,
-            $"folders?project_id={projectId}"
+            $"projects/{projectId}/documents?sort=document_type&filters%5Bdocument_type%5D=file",
+            companyId
         );
 
         response.EnsureSuccessStatusCode();
 
         var json = await response.Content.ReadAsStringAsync();
-        return JsonSerializer.Deserialize<DocumentFolder>(json)!;
+        var files = JsonSerializer.Deserialize<FileRoot>(json);
+        if (files is null) return [];
+        return files.Data;
     }
 
-    private DocumentFolder? FindFolder(
-    DocumentFolder root,
-    string? folderName = null,
-    int? parentId = null)
+    public List<FileItem> FindFilesFromProstoreIds(
+    List<FileItem> files,
+    List<string> ids)
     {
-        // Case 1: both null → root
-        if (folderName == null && parentId == null)
-            return root;
-
-        return FindFolderRecursive(root, folderName, parentId);
-    }
-
-    private DocumentFolder? FindFolderRecursive(
-        DocumentFolder current,
-        string? folderName,
-        int? parentId)
-    {
-        // Case 2: name only
-        if (folderName != null && parentId == null &&
-            current.Name?.Equals(folderName, StringComparison.OrdinalIgnoreCase) == true)
+        List<FileItem> filteredFiles = [];
+        foreach (var file in files)
         {
-            return current;
-        }
-
-        // Case 3: name + parent
-        if (folderName != null && parentId != null &&
-            current.Name?.Equals(folderName, StringComparison.OrdinalIgnoreCase) == true &&
-            current.ParentId == parentId)
-        {
-            return current;
-        }
-
-        // Recurse into children
-        if (current.Folders != null)
-        {
-            foreach (var child in current.Folders)
+            try
             {
-                var found = FindFolderRecursive(child, folderName, parentId);
-                if (found != null)
-                    return found;
+                var storeId = file.FileInfo.CurrentVersion.ProstoreFile.Id;
+                if (ids.Contains(storeId))
+                {
+                    filteredFiles.Add(file);
+                }
+            }
+            catch
+            {
+                continue;
             }
         }
-
-        return null;
-    }
-
-
-
-    // ------------------------------------------------------------
-    // Create document folder in Procore
-    // ------------------------------------------------------------
-
-    private async Task<DocumentFolder> CreateDocumentFolderAsync(
-    string projectId,
-    string folderName,
-    int? parentFolderId = null)
-    {
-        var payload = new
-        {
-            folder = new
-            {
-                name = folderName,
-                parent_id = parentFolderId
-            }
-        };
-        var json = JsonSerializer.Serialize(payload, options: NullJsonOptions);
-        using var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-        var response = await _procoreClient.SendAsync
-        (
-            HttpMethod.Post,
-            "1.0",
-            _oauthSession.Procore.AccessToken,
-            $"folders?project_id={projectId}",
-            null,
-            content
-        );
-
-        response.EnsureSuccessStatusCode();
-
-        var responseJson = await response.Content.ReadAsStringAsync();
-        return JsonSerializer.Deserialize<DocumentFolder>(responseJson)!;
-    }
-
-
-    // ------------------------------------------------------------
-    // Create document record in Procore
-    // ------------------------------------------------------------
-
-    private async Task CreateDocumentAsync(
-    string projectId,
-    long folderId,
-    string fileName,
-    string uploadUuid)
-    {
-        var payload = new
-        {
-            document = new DocumentPayload
-            {
-                Name = fileName,
-                UploadUuid = uploadUuid,
-                ParentId = folderId
-            }
-        };
-        var response = await _procoreClient.SendAsync(
-            HttpMethod.Post,
-            "1.0",
-            _oauthSession.Procore.AccessToken,
-            $"files?project_id={projectId}",
-            null,
-            payload
-        );
-        response.EnsureSuccessStatusCode();
+        return filteredFiles;
     }
 
 
