@@ -656,9 +656,6 @@ public class User
 
     [JsonPropertyName("name")]
     public required string Name { get; set; }
-
-    [JsonPropertyName("locale")]
-    public required string Locale { get; set; }
 }
 
 public class Folder
