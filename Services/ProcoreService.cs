@@ -180,12 +180,17 @@ public class ProcoreService
             var json = await response.Content.ReadAsStringAsync();
             var commitment = JsonSerializer.Deserialize<CommitmentBase>(json) ?? throw new InvalidDataException("Commitment is null");
             Console.WriteLine(json);
-            if (commitment is WorkOrderCommitment || commitment is PurchaseOrderCommitment)
+            if (commitment is WorkOrderCommitment)
             {
+                commitment.Type = ProcoreEnums.ProcoreCommitmentType.WorkOrder;
                 return (commitment, null);
             }
-            else
+            else if (commitment is PurchaseOrderCommitment)
             {
+                commitment.Type = ProcoreEnums.ProcoreCommitmentType.PurchaseOrder;
+                return (commitment, null);
+            }
+            else            {
                 return (null, "Commitment type can't be determined");
             }
         }

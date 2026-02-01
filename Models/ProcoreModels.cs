@@ -22,7 +22,7 @@ public class ProcoreSession
 public abstract class CommitmentBase
 {
     [JsonPropertyName("type")]
-    public required string Type { get; set; }
+    public string Type { get; set; } = default!;
 }
 
 public class WorkOrderCommitment : CommitmentBase
