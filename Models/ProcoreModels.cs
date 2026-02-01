@@ -705,7 +705,7 @@ public class User
     public required string Login { get; set; }
 
     [JsonPropertyName("id")]
-    public required string Id { get; set; }
+    public required int Id { get; set; }
 
     [JsonPropertyName("name")]
     public required string Name { get; set; }

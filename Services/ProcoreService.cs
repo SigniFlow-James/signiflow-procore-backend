@@ -431,11 +431,7 @@ public class ProcoreService
             response.EnsureSuccessStatusCode();
 
             var json = await response.Content.ReadAsStringAsync();
-            var options = new JsonSerializerOptions
-            {
-                NumberHandling = JsonNumberHandling.AllowReadingFromString
-            };
-            var files = JsonSerializer.Deserialize<FileRoot>(json, options);
+            var files = JsonSerializer.Deserialize<FileRoot>(json);
             if (files is null) return [];
             return files.Data;
         }
