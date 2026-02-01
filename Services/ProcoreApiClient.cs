@@ -188,6 +188,13 @@ public class ProcoreApiClient
         var response = await _http.SendAsync(request);
         return response;
     }
+
+    public async Task<byte[]> GetBytes(
+        string uri
+    )
+    {
+        return await _http.GetByteArrayAsync(uri);
+    }
 }
 
 // ============================================================

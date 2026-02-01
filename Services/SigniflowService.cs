@@ -60,7 +60,7 @@ public class SigniflowService
                 DocField = encodedPdf,
                 DocNameField = documentName,
                 ExtensionField = (int)DocExtension.pdf,
-                DueDateField = DateTime.UtcNow.AddDays(7),
+                // DueDateField = DateTime.UtcNow.AddDays(7),
                 AutoRemindField = (int)AutoRemind.No,
                 AutoExpireField = (int)AutoExpire.No,
                 PriorityField = (int)Priority.Normal,
@@ -82,19 +82,19 @@ public class SigniflowService
             };
 
             var signerOneFullInfo = GenerateWorkflowSignerInfo(
-                signerOne, 
+                signerOne,
                 "ProcoreGeneralContractorSignHere",
                 "ProcoreGeneralContractorSignedDate"
                 );
             var signerTwoFullInfo = GenerateWorkflowSignerInfo(
-                signerTwo, 
+                signerTwo,
                 "ProcoreSubcontractorSignHere",
                 "ProcoreSubcontractorSignedDate"
                 );
 
             // Get viewers
             List<WorkflowUserInfo> workflowViewers = [];
-            foreach (ViewerItem viewer in viewers) 
+            foreach (ViewerItem viewer in viewers)
             {
                 var workflowViewer = GenerateWorkflowViewerInfo(viewer.Recipient!);
                 if (workflowViewer == null) continue;
@@ -121,8 +121,8 @@ public class SigniflowService
     }
 
     public WorkflowUserInfo GenerateWorkflowSignerInfo(
-        BasicUserInfo info, 
-        string signTag, 
+        BasicUserInfo info,
+        string signTag,
         string dateTag)
     {
         var first = info.FirstNames.Trim();
@@ -214,6 +214,18 @@ public class SigniflowService
         return viewer;
     }
 
+    public async Task<List<string>> AddSupportingDocsToWorkflowAsync(
+        List<SupportingWorkflowDocument> supportingWorkflowDocuments,
+        int portfolioId
+    )
+    {
+        foreach (var doc in supportingWorkflowDocuments)
+        {
+
+        }
+        return [];
+    }
+
     public async Task<DownloadResponse> DownloadAsync(string documentId)
     {
         var body = new DownloadRequest
@@ -223,6 +235,26 @@ public class SigniflowService
         };
 
         var response = await _client.DownloadDocumentAsync(body);
+        return response;
+    }
+
+    public async Task<PortfolioResponse?> Test()
+    {
+        var token = _oauthSession.Signiflow.TokenField;
+        if (token == null)
+        {
+            return null;
+        }
+        var request = new{
+                DocIDField = 60085,
+                DocumentNameField = "Signed Commitment_ 116891",
+                PortfolioIDField = 13514,
+                TokenField = token
+            };
+        var response = await _client.PostAsync<PortfolioResponse>(
+            endpoint: "LinkToPortfolio",
+            body: request,
+            false);
         return response;
     }
 }

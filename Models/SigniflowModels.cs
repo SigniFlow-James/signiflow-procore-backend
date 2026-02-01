@@ -45,6 +45,15 @@ public class DownloadResponse
     public string ResultField { get; set; } = "";
 }
 
+// supporting docs
+
+public class SupportingWorkflowDocument
+{
+    public string Title { get; set; } = "";
+    public string DocStringBase64 { get; set; } = "";
+    public required SigniflowEnums.DocExtension Extension { get; set; }
+}
+
 // Full Workflow Models
 public class BasicUserInfo
 {
@@ -86,7 +95,7 @@ public class FullWorkflowResponse
     public string? ResultField { get; set; }
     public string? DocField { get; set; }
     public int? DocIDField { get; set; }
-    public int? PortfolioIDField { get; set; }
+    public int PortfolioIDField { get; set; }
     public string? StatusField { get; set; }
 }
 
@@ -96,6 +105,12 @@ public class PortfolioInfo
     public bool LinkToPortfolioField { get; set; }
     public int PortfolioIDField { get; set; }
     public string PortfolioNameField { get; set; } = "";
+}
+
+public class PortfolioResponse
+{
+    public int PortfolioIDField { get; set; }
+    public string ResultField { get; set; } = "";
 }
 
 public class WorkflowUserInfo

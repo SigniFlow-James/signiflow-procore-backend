@@ -68,7 +68,7 @@ public class SigniflowApiClient
     // ------------------------------------------------------------
     // Core POST helper
     // ------------------------------------------------------------
-    private async Task<T> PostAsync<T>(
+    public async Task<T> PostAsync<T>(
         string endpoint,
         object body,
         bool useMicrosoftDateFormat = true)
@@ -90,11 +90,6 @@ public class SigniflowApiClient
         var responseJson = await response.Content.ReadAsStringAsync();
         Console.WriteLine($"🔑 response: {responseJson}");
         return JsonSerializer.Deserialize<T>(responseJson, options)!;
-    }
-
-    public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request)
-    {
-        return await _http.SendAsync(request);
     }
 }
 

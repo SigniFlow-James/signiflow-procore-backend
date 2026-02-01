@@ -282,6 +282,31 @@ public class ProcoreService
         }
     }
 
+    // ------------------------------------------------------------
+    // Export supporting documents
+    // ------------------------------------------------------------
+
+    public async Task<(byte[]? pdfBytes, string? error)> ExportSupportingDocsAsync(string uri)
+    {
+        try
+        {
+            var pdfBytes = await _procoreClient.GetBytes(uri);
+            if (pdfBytes == null)
+            {
+                Console.WriteLine("❌ Document export returned null");
+                return (null, "Document export failed");
+            }
+
+            return (pdfBytes, null);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("❌ Error exporting Document:");
+            Console.WriteLine(ex);
+            return (null, "Error exporting Document");
+        }
+    }
+
 
     // ------------------------------------------------------------
     // Create upload in Procore
@@ -410,7 +435,7 @@ public class ProcoreService
     }
 
     // ------------------------------------------------------------
-    // Get document folders in Procore project
+    // Get document files in Procore project
     // ------------------------------------------------------------
 
     public async Task<List<FileItem>> GetDocumentFilesAsync(

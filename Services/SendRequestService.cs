@@ -5,6 +5,7 @@ using System.Threading.Channels;
 using System.Text.Json;
 using Signiflow.APIClasses;
 using Procore.APIClasses;
+using System.Data.SqlTypes;
 
 public class SendRequest
 {
@@ -59,10 +60,10 @@ public class SendRequestWorker : BackgroundService
                 using var scope = _serviceProvider.CreateScope();
                 var processor = scope.ServiceProvider
                     .GetRequiredService<SendRequestProcessor>();
-                
+
                 await _authService.CheckRefreshAuthAsync();
                 await processor.ProcessSendRequestAsync(request);
-                
+
                 Console.WriteLine($"✅ Successfully processed send request for commitment: {request.Context.CommitmentId}");
             }
             catch (Exception ex)
@@ -114,10 +115,46 @@ public class SendRequestProcessor
             // Export PDF from Procore
             var (pdfBytes, exportError) = await _procoreService.ExportCommitmentPdfAsync(request.Context);
 
-            if (exportError != null)
+            if (exportError != null || pdfBytes == null)
             {
-                Console.WriteLine($"❌ Failed to export PDF: {exportError}");
+                Console.WriteLine($"❌ Failed to export PDF: {exportError ?? "PDF bytes is null"}");
                 return;
+            }
+
+            // Get supporting documentation files
+            List<SupportingWorkflowDocument> supportingDocs = [];
+            var extractor = new PdfExtractionService();
+            var links = extractor.GetLinksFromPdfBytes(pdfBytes);
+            var extensions = Enum.GetNames(typeof(SigniflowEnums.DocExtension))
+                 .Select(e => "." + e.ToLowerInvariant());
+
+            foreach (var link in links)
+            {
+                var title = link.Text;
+                title = title.TrimEnd().TrimEnd(',').TrimEnd(); // remove any possible trailing commas and spaces
+
+                var extension = Path.GetExtension(title);
+                if (string.IsNullOrEmpty(extension))
+                    throw new InvalidOperationException("No file extension found");
+                if (!Enum.TryParse<SigniflowEnums.DocExtension>(
+                        extension.TrimStart('.'),
+                        ignoreCase: true,
+                        out var extensionEnum))
+                {
+                    throw new InvalidOperationException($"Unsupported file extension: {extension}");
+                }
+
+                // get document
+                var bytes = await _procoreService.ExportSupportingDocsAsync(link.Uri);
+                var encodedDoc = Convert.ToBase64String(pdfBytes);
+                supportingDocs.Add(new SupportingWorkflowDocument
+                {
+                    Title = title,
+                    DocStringBase64 = encodedDoc,
+                    Extension = extensionEnum
+                }
+                );
+
             }
 
             Console.WriteLine("📤 Sending PDF to SigniFlow...");
@@ -136,10 +173,19 @@ public class SendRequestProcessor
                 request.CustomMessage ?? ""
             );
 
-            if (signiflowError != null)
+            if (signiflowError != null || workflowResponse == null)
             {
-                Console.WriteLine($"❌ SigniFlow workflow creation failed: {signiflowError}");
+                Console.WriteLine($"❌ SigniFlow workflow creation failed: {signiflowError ?? "workflow Response is null"}");
                 return;
+            }
+
+            // Add to portfolio
+            if (supportingDocs.Count > 0)
+            {
+                var supportingDocErrors = await _signiflowService.AddSupportingDocsToWorkflowAsync(
+                supportingDocs,
+                workflowResponse.PortfolioIDField
+            );
             }
 
             Console.WriteLine("✅ Workflow created successfully");

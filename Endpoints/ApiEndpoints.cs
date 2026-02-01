@@ -12,32 +12,13 @@ public static class ApiEndpoints
 {
     public static void MapApiEndpoints(this WebApplication app)
     {
-        app.MapGet("/api/test", async (ProcoreService procoreService) =>
+        app.MapGet("/api/test", async (SigniflowService sf) =>
         {
             try
             {
                 Console.WriteLine("Test 1");
-                var context = new ProcoreContext
-                {
-                    CommitmentId = "112291",
-                    ProjectId = "310481",
-                    CompanyId = "4279506",
-                    CommitmentType = ProcoreEnums.ProcoreCommitmentType.WorkOrder
-                };
-
-                var (pdfBytes, exportError) = await procoreService.ExportCommitmentPdfAsync(context);
-                if (pdfBytes == null)
-                {
-                    Console.WriteLine("No pdf bytes");
-                    return;
-                }
-
-                var extractor = new PdfExtractionService();
-
-                var links = extractor.GetLinksFromPdfBytes(pdfBytes);
-
-                Console.WriteLine($"{links[0].Text} - {links[0].Uri} - {links[0].Annotation} - {links[0].Letters}");
-
+                var res = await sf.Test();
+                Console.WriteLine(res);
                 Results.Ok("OK");
             }
             catch
@@ -167,7 +148,7 @@ public static class ApiEndpoints
         ) =>
         {
             Console.WriteLine("📥 /api/send received");
-            
+
             // User token check
             var userTokenCheck = adminService.UserTokenCheck(request);
             if (userTokenCheck == null)
@@ -201,7 +182,7 @@ public static class ApiEndpoints
             }
 
             Console.WriteLine($"📥 Received body");
-            
+
             if (!body.TryGetProperty("form", out var form) ||
                 !body.TryGetProperty("context", out var contextProp))
             {
