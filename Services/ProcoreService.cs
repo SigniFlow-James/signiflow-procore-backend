@@ -178,8 +178,9 @@ public class ProcoreService
 
             response.EnsureSuccessStatusCode();
             var json = await response.Content.ReadAsStringAsync();
-            var commitment = JsonSerializer.Deserialize<CommitmentBase>(json) ?? throw new InvalidDataException("Commitment is null");
             Console.WriteLine(json);
+            var commitment = JsonSerializer.Deserialize<CommitmentBase>(json) ?? throw new InvalidDataException("Commitment is null");
+            Console.WriteLine(commitment);
             if (commitment is WorkOrderCommitment)
             {
                 commitment.Type = ProcoreEnums.ProcoreCommitmentType.WorkOrder;

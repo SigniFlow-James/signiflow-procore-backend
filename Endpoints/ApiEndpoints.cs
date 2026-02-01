@@ -28,58 +28,58 @@ public static class ApiEndpoints
                 CommitmentBase? commitment;
                 string? error;
                 (commitment, error) = await procoreService.GetCommitmentAsync(context.CompanyId, context.ProjectId, context.CommitmentId);
-                if (commitment == null)
-                {
-                    Console.WriteLine("❌ Commitment 1 returned null");
-                    return;
-                }
-                context.CommitmentType = commitment.Type;
+                // if (commitment == null)
+                // {
+                //     Console.WriteLine("❌ Commitment 1 returned null");
+                //     return;
+                // }
+                // context.CommitmentType = commitment.Type;
 
-                CommitmentPatchBase patch;
-                if (context.CommitmentType == ProcoreEnums.ProcoreCommitmentType.WorkOrder)
-                {
-                    patch = new WorkOrderPatch
-                    {
-                        Status = ProcoreEnums.SubcontractWorkflowStatus.AwaitingSignature,
-                        IssuedOnDate = DateOnly.FromDateTime(DateTime.Today)
-                    };
-                }
-                else
-                {
-                    patch = new PurchaseOrderPatch
-                    {
-                        Status = ProcoreEnums.PurchaseOrderWorkflowStatus.Submitted,
-                        IssuedOnDate = DateOnly.FromDateTime(DateTime.Today)
-                    };
-                }
+                // CommitmentPatchBase patch;
+                // if (context.CommitmentType == ProcoreEnums.ProcoreCommitmentType.WorkOrder)
+                // {
+                //     patch = new WorkOrderPatch
+                //     {
+                //         Status = ProcoreEnums.SubcontractWorkflowStatus.AwaitingSignature,
+                //         IssuedOnDate = DateOnly.FromDateTime(DateTime.Today)
+                //     };
+                // }
+                // else
+                // {
+                //     patch = new PurchaseOrderPatch
+                //     {
+                //         Status = ProcoreEnums.PurchaseOrderWorkflowStatus.Submitted,
+                //         IssuedOnDate = DateOnly.FromDateTime(DateTime.Today)
+                //     };
+                // }
 
-                await procoreService.PatchCommitmentAsync(
-                    context,
-                    patch
-                );
+                // await procoreService.PatchCommitmentAsync(
+                //     context,
+                //     patch
+                // );
 
-                Console.WriteLine("Test 2");
-                if (context.CommitmentType == ProcoreEnums.ProcoreCommitmentType.WorkOrder)
-                {
-                    patch = new WorkOrderPatch
-                    {
-                        Status = ProcoreEnums.SubcontractWorkflowStatus.Approved,
-                        SignedContractReceivedDate = DateOnly.FromDateTime(DateTime.Today)
-                    };
-                }
-                else
-                {
-                    patch = new PurchaseOrderPatch
-                    {
-                        Status = ProcoreEnums.SubcontractWorkflowStatus.Approved,
-                        SignedPurchaseOrderReceivedDate = DateOnly.FromDateTime(DateTime.Today)
-                    };
-                }
+                // Console.WriteLine("Test 2");
+                // if (context.CommitmentType == ProcoreEnums.ProcoreCommitmentType.WorkOrder)
+                // {
+                //     patch = new WorkOrderPatch
+                //     {
+                //         Status = ProcoreEnums.SubcontractWorkflowStatus.Approved,
+                //         SignedContractReceivedDate = DateOnly.FromDateTime(DateTime.Today)
+                //     };
+                // }
+                // else
+                // {
+                //     patch = new PurchaseOrderPatch
+                //     {
+                //         Status = ProcoreEnums.SubcontractWorkflowStatus.Approved,
+                //         SignedPurchaseOrderReceivedDate = DateOnly.FromDateTime(DateTime.Today)
+                //     };
+                // }
 
-                await procoreService.PatchCommitmentAsync(
-                        context,
-                        patch
-                    );
+                // await procoreService.PatchCommitmentAsync(
+                //         context,
+                //         patch
+                //     );
 
                 Console.WriteLine("Test 3");
                 context = new ProcoreContext
@@ -91,57 +91,57 @@ public static class ApiEndpoints
                 };
 
                 (commitment, error) = await procoreService.GetCommitmentAsync(context.CompanyId, context.ProjectId, context.CommitmentId);
-                if (commitment == null)
-                {
-                    Console.WriteLine("❌ Commitment 1 returned null");
-                    return;
-                }
-                context.CommitmentType = commitment.Type;
+                // if (commitment == null)
+                // {
+                //     Console.WriteLine("❌ Commitment 1 returned null");
+                //     return;
+                // }
+                // context.CommitmentType = commitment.Type;
 
-                if (context.CommitmentType == ProcoreEnums.ProcoreCommitmentType.WorkOrder)
-                {
-                    patch = new WorkOrderPatch
-                    {
-                        Status = ProcoreEnums.SubcontractWorkflowStatus.AwaitingSignature,
-                        IssuedOnDate = DateOnly.FromDateTime(DateTime.Today)
-                    };
-                }
-                else
-                {
-                    patch = new PurchaseOrderPatch
-                    {
-                        Status = ProcoreEnums.PurchaseOrderWorkflowStatus.Submitted,
-                        IssuedOnDate = DateOnly.FromDateTime(DateTime.Today)
-                    };
-                }
+                // if (context.CommitmentType == ProcoreEnums.ProcoreCommitmentType.WorkOrder)
+                // {
+                //     patch = new WorkOrderPatch
+                //     {
+                //         Status = ProcoreEnums.SubcontractWorkflowStatus.AwaitingSignature,
+                //         IssuedOnDate = DateOnly.FromDateTime(DateTime.Today)
+                //     };
+                // }
+                // else
+                // {
+                //     patch = new PurchaseOrderPatch
+                //     {
+                //         Status = ProcoreEnums.PurchaseOrderWorkflowStatus.Submitted,
+                //         IssuedOnDate = DateOnly.FromDateTime(DateTime.Today)
+                //     };
+                // }
 
-                await procoreService.PatchCommitmentAsync(
-                    context,
-                    patch
-                );
+                // await procoreService.PatchCommitmentAsync(
+                //     context,
+                //     patch
+                // );
 
-                Console.WriteLine("Test 4");
-                if (context.CommitmentType == ProcoreEnums.ProcoreCommitmentType.WorkOrder)
-                {
-                    patch = new WorkOrderPatch
-                    {
-                        Status = ProcoreEnums.SubcontractWorkflowStatus.Approved,
-                        SignedContractReceivedDate = DateOnly.FromDateTime(DateTime.Today)
-                    };
-                }
-                else
-                {
-                    patch = new PurchaseOrderPatch
-                    {
-                        Status = ProcoreEnums.SubcontractWorkflowStatus.Approved,
-                        SignedPurchaseOrderReceivedDate = DateOnly.FromDateTime(DateTime.Today)
-                    };
-                }
+                // Console.WriteLine("Test 4");
+                // if (context.CommitmentType == ProcoreEnums.ProcoreCommitmentType.WorkOrder)
+                // {
+                //     patch = new WorkOrderPatch
+                //     {
+                //         Status = ProcoreEnums.SubcontractWorkflowStatus.Approved,
+                //         SignedContractReceivedDate = DateOnly.FromDateTime(DateTime.Today)
+                //     };
+                // }
+                // else
+                // {
+                //     patch = new PurchaseOrderPatch
+                //     {
+                //         Status = ProcoreEnums.SubcontractWorkflowStatus.Approved,
+                //         SignedPurchaseOrderReceivedDate = DateOnly.FromDateTime(DateTime.Today)
+                //     };
+                // }
 
-                await procoreService.PatchCommitmentAsync(
-                        context,
-                        patch
-                    );
+                // await procoreService.PatchCommitmentAsync(
+                //         context,
+                //         patch
+                //     );
 
                 Results.Ok("OK");
             }
