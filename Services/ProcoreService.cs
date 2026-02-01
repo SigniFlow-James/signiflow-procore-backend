@@ -2,6 +2,7 @@
 // FILE: Services/ProcoreService.cs
 // ============================================================
 using System.Net.Http.Headers;
+using System.Reflection.Metadata.Ecma335;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -45,7 +46,8 @@ public class ProcoreService
                 _oauthSession.Procore.AccessToken,
                 $"companies/{companyId}/users",
                 companyId
-            );}
+            );
+            }
             else
             {
                 response = await _procoreClient.SendAsync(
@@ -56,14 +58,14 @@ public class ProcoreService
                 companyId
             );
             }
-            
+
             response.EnsureSuccessStatusCode();
 
             var json = await response.Content.ReadAsStringAsync();
             Console.WriteLine($"Procore Users JSON: {json}");
             var users = JsonSerializer.Deserialize<List<ProcoreUser>>(json)
                            ?? [];
-            
+
             var recipients = users.Select(user => new ProcoreRecipient
             {
                 Id = user.Id.ToString(),
@@ -159,7 +161,7 @@ public class ProcoreService
         }
     }
 
-    public async Task<(bool, string? error)> CheckCommitmentAsync(
+    public async Task<(CommitmentBase?, string? error)> GetCommitmentAsync(
         string companyId,
         string projectId,
         string commitmentId)
@@ -170,18 +172,27 @@ public class ProcoreService
                 HttpMethod.Get,
                 "2.0",
                 _oauthSession.Procore.AccessToken,
-                $"companies/{companyId}/projects/{projectId}/commitment_contracts/{commitmentId}",
+                $"companies/{companyId}/projects/{projectId}/commitment_contracts/{commitmentId}?view=extended",
                 companyId
                 );
-            
-            response.EnsureSuccessStatusCode();
 
-            return (true, null);
+            response.EnsureSuccessStatusCode();
+            var json = await response.Content.ReadAsStringAsync();
+            var commitment = JsonSerializer.Deserialize<CommitmentBase>(json) ?? throw new InvalidDataException("Commitment is null");
+            Console.WriteLine(json);
+            if (commitment is WorkOrderCommitment || commitment is PurchaseOrderCommitment)
+            {
+                return (commitment, null);
+            }
+            else
+            {
+                return (null, "Commitment type can't be determined");
+            }
         }
         catch (Exception ex)
         {
             Console.WriteLine(ex);
-            return (false, ex.Message);
+            return (null, ex.Message);
         }
     }
 
@@ -559,7 +570,7 @@ public class ProcoreService
 
     public async Task PatchCommitmentAsync(
     ProcoreContext context,
-    CommitmentContractPatch patch)
+    CommitmentPatchBase patch)
     {
         await HandleCommitmentRequestAsync(context, HttpMethod.Patch, patch, true);
     }
@@ -567,7 +578,7 @@ public class ProcoreService
     private async Task HandleCommitmentRequestAsync(
     ProcoreContext context,
     HttpMethod method,
-    CommitmentContractPatch? patch,
+    CommitmentPatchBase? patch,
     bool useJsonOptions)
     {
         try

@@ -20,8 +20,8 @@ public static class ProcoreEnums
 
     public class ProcoreCommitmentType
     {
-        public const string SubContract = "work_order_contracts";
-        public const string PurchaseOrder = "purchase_order_contracts";
+        public const string WorkOrder = "WorkOrderContract";
+        public const string PurchaseOrder = "PurchaseOrderContract";
     }
 
     public class SubcontractWorkflowStatus

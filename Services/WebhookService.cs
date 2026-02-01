@@ -122,14 +122,25 @@ public class SigniflowWebhookProcessor
             }
 
             // Associate upload to commitment
-            var patch = new CommitmentContractPatch
+            CommitmentPatchBase patch;
+            if (metadata.CommitmentType == ProcoreEnums.ProcoreCommitmentType.WorkOrder)
             {
-                Status = metadata.CommitmentType == ProcoreEnums.ProcoreCommitmentType.SubContract ?
-                    ProcoreEnums.SubcontractWorkflowStatus.Approved :
-                    ProcoreEnums.PurchaseOrderWorkflowStatus.Approved,
-                ContractDate = DateOnly.FromDateTime(webhookEvent.CompletedDate),
-                UploadIds = [uploadUuid]
-            };
+                patch = new WorkOrderPatch
+                {
+                    Status = ProcoreEnums.SubcontractWorkflowStatus.Approved,
+                    SignedContractReceivedDate = DateOnly.FromDateTime(webhookEvent.CompletedDate),
+                    UploadIds = [uploadUuid]
+                };
+            }
+            else
+            {
+                patch = new PurchaseOrderPatch
+                {
+                    Status = ProcoreEnums.PurchaseOrderWorkflowStatus.Approved,
+                    SignedPurchaseOrderReceivedDate = DateOnly.FromDateTime(webhookEvent.CompletedDate),
+                    UploadIds = [uploadUuid]
+                };
+            }
 
             await _procoreService.PatchCommitmentAsync(
                     metadata,
@@ -147,13 +158,24 @@ public class SigniflowWebhookProcessor
                     Console.WriteLine($"Metadata missing, with errors: {ex}");
                     return;
                 }
-                var patch = new CommitmentContractPatch
+
+                CommitmentPatchBase patch;
+                if (metadata.CommitmentType == ProcoreEnums.ProcoreCommitmentType.WorkOrder)
                 {
-                    Status = metadata.CommitmentType == ProcoreEnums.ProcoreCommitmentType.SubContract ?
-                        ProcoreEnums.SubcontractWorkflowStatus.Approved :
-                        ProcoreEnums.PurchaseOrderWorkflowStatus.Approved,
-                    ContractDate = DateOnly.FromDateTime(webhookEvent.CompletedDate),
-                };
+                    patch = new WorkOrderPatch
+                    {
+                        Status = ProcoreEnums.SubcontractWorkflowStatus.Approved,
+                        SignedContractReceivedDate = DateOnly.FromDateTime(webhookEvent.CompletedDate)
+                    };
+                }
+                else
+                {
+                    patch = new PurchaseOrderPatch
+                    {
+                        Status = ProcoreEnums.SubcontractWorkflowStatus.Approved,
+                        SignedPurchaseOrderReceivedDate = DateOnly.FromDateTime(webhookEvent.CompletedDate)
+                    };
+                }
 
                 await _procoreService.PatchCommitmentAsync(
                         metadata,

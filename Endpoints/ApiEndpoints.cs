@@ -16,25 +16,132 @@ public static class ApiEndpoints
         {
             try
             {
+                Console.WriteLine("Test 1");
                 var context = new ProcoreContext
                 {
                     CommitmentId = "116891",
-                    CommitmentType = ProcoreEnums.ProcoreCommitmentType.PurchaseOrder,
+                    ProjectId = "310481",
                     CompanyId = "4279506",
-                    ProjectId = "310481"
+                    CommitmentType = ""
                 };
-                // Update status on procore
-                var patch = new CommitmentContractPatch
+
+                CommitmentBase? commitment;
+                string? error;
+                (commitment, error) = await procoreService.GetCommitmentAsync(context.CompanyId, context.ProjectId, context.CommitmentId);
+                if (commitment == null)
                 {
-                    Status = context.CommitmentType == ProcoreEnums.ProcoreCommitmentType.SubContract ?
-                    ProcoreEnums.SubcontractWorkflowStatus.AwaitingSignature :
-                    ProcoreEnums.PurchaseOrderWorkflowStatus.Submitted,
-                };
+                    Console.WriteLine("❌ Commitment 1 returned null");
+                    return;
+                }
+                context.CommitmentType = commitment.Type;
+
+                CommitmentPatchBase patch;
+                if (context.CommitmentType == ProcoreEnums.ProcoreCommitmentType.WorkOrder)
+                {
+                    patch = new WorkOrderPatch
+                    {
+                        Status = ProcoreEnums.SubcontractWorkflowStatus.AwaitingSignature,
+                        IssuedOnDate = DateOnly.FromDateTime(DateTime.Today)
+                    };
+                }
+                else
+                {
+                    patch = new PurchaseOrderPatch
+                    {
+                        Status = ProcoreEnums.PurchaseOrderWorkflowStatus.Submitted,
+                        IssuedOnDate = DateOnly.FromDateTime(DateTime.Today)
+                    };
+                }
 
                 await procoreService.PatchCommitmentAsync(
                     context,
                     patch
                 );
+
+                Console.WriteLine("Test 2");
+                if (context.CommitmentType == ProcoreEnums.ProcoreCommitmentType.WorkOrder)
+                {
+                    patch = new WorkOrderPatch
+                    {
+                        Status = ProcoreEnums.SubcontractWorkflowStatus.Approved,
+                        SignedContractReceivedDate = DateOnly.FromDateTime(DateTime.Today)
+                    };
+                }
+                else
+                {
+                    patch = new PurchaseOrderPatch
+                    {
+                        Status = ProcoreEnums.SubcontractWorkflowStatus.Approved,
+                        SignedPurchaseOrderReceivedDate = DateOnly.FromDateTime(DateTime.Today)
+                    };
+                }
+
+                await procoreService.PatchCommitmentAsync(
+                        context,
+                        patch
+                    );
+
+                Console.WriteLine("Test 3");
+                context = new ProcoreContext
+                {
+                    CommitmentId = "112291",
+                    ProjectId = "310481",
+                    CompanyId = "4279506",
+                    CommitmentType = ""
+                };
+
+                (commitment, error) = await procoreService.GetCommitmentAsync(context.CompanyId, context.ProjectId, context.CommitmentId);
+                if (commitment == null)
+                {
+                    Console.WriteLine("❌ Commitment 1 returned null");
+                    return;
+                }
+                context.CommitmentType = commitment.Type;
+
+                if (context.CommitmentType == ProcoreEnums.ProcoreCommitmentType.WorkOrder)
+                {
+                    patch = new WorkOrderPatch
+                    {
+                        Status = ProcoreEnums.SubcontractWorkflowStatus.AwaitingSignature,
+                        IssuedOnDate = DateOnly.FromDateTime(DateTime.Today)
+                    };
+                }
+                else
+                {
+                    patch = new PurchaseOrderPatch
+                    {
+                        Status = ProcoreEnums.PurchaseOrderWorkflowStatus.Submitted,
+                        IssuedOnDate = DateOnly.FromDateTime(DateTime.Today)
+                    };
+                }
+
+                await procoreService.PatchCommitmentAsync(
+                    context,
+                    patch
+                );
+
+                Console.WriteLine("Test 4");
+                if (context.CommitmentType == ProcoreEnums.ProcoreCommitmentType.WorkOrder)
+                {
+                    patch = new WorkOrderPatch
+                    {
+                        Status = ProcoreEnums.SubcontractWorkflowStatus.Approved,
+                        SignedContractReceivedDate = DateOnly.FromDateTime(DateTime.Today)
+                    };
+                }
+                else
+                {
+                    patch = new PurchaseOrderPatch
+                    {
+                        Status = ProcoreEnums.SubcontractWorkflowStatus.Approved,
+                        SignedPurchaseOrderReceivedDate = DateOnly.FromDateTime(DateTime.Today)
+                    };
+                }
+
+                await procoreService.PatchCommitmentAsync(
+                        context,
+                        patch
+                    );
 
                 Results.Ok("OK");
             }
@@ -56,10 +163,10 @@ public static class ApiEndpoints
             var companyId = request.Headers["company-id"].ToString();
             var projectId = request.Headers["project-id"].ToString();
             var commitmentId = request.Headers["object-id"].ToString();
-            bool success;
+            CommitmentBase? success;
             string? error;
-            (success, error) = await procoreService.CheckCommitmentAsync(companyId, projectId, commitmentId);
-            if (!success)
+            (success, error) = await procoreService.GetCommitmentAsync(companyId, projectId, commitmentId);
+            if (success == null)
             {
                 Console.WriteLine($"❌ Invalid context - API init error: {error}");
                 response.StatusCode = 401;
@@ -265,26 +372,39 @@ public static class ApiEndpoints
                 await response.WriteAsJsonAsync(new { error = "Invalid Procore context" });
                 return;
             }
-            var chunks = context.CommitmentType.Split('/');
-            if (chunks.Contains(ProcoreEnums.ProcoreCommitmentType.SubContract))
+            // var chunks = context.CommitmentType.Split('/');
+            // if (chunks.Contains(ProcoreEnums.ProcoreCommitmentType.WorkOrder))
+            // {
+            //     context.CommitmentType = ProcoreEnums.ProcoreCommitmentType.WorkOrder;
+            // }
+            // else if (chunks.Contains(ProcoreEnums.ProcoreCommitmentType.PurchaseOrder))
+            // {
+            //     context.CommitmentType = ProcoreEnums.ProcoreCommitmentType.PurchaseOrder;
+            // }
+            // else
+            // {
+            //     Console.WriteLine("❌ Commitment doesn't match a known type");
+            //     response.StatusCode = 400;
+            //     await response.WriteAsJsonAsync(new { error = "Invalid Procore context" });
+            //     return;
+            // }
+
+            // Get full commitment info
+            CommitmentBase? commitment;
+            string? error;
+            (commitment, error) = await procoreService.GetCommitmentAsync(context.CompanyId, context.ProjectId, context.CommitmentId);
+            if (commitment == null)
             {
-                context.CommitmentType = ProcoreEnums.ProcoreCommitmentType.SubContract;
-            }
-            else if (chunks.Contains(ProcoreEnums.ProcoreCommitmentType.PurchaseOrder))
-            {
-                context.CommitmentType = ProcoreEnums.ProcoreCommitmentType.PurchaseOrder;
-            }
-            else
-            {
-                Console.WriteLine("❌ Commitment doesn't match a known type");
+                Console.WriteLine("❌ Commitment returned null");
                 response.StatusCode = 400;
                 await response.WriteAsJsonAsync(new { error = "Invalid Procore context" });
                 return;
             }
 
+            context.CommitmentType = commitment.Type;
 
             Console.WriteLine("📥 /api/send received");
-            Console.WriteLine($"Procore context: {context}");
+            Console.WriteLine($"Procore context: {JsonSerializer.Serialize(context)}");
             Console.WriteLine(new { generalContractor, subContractor });
 
             // Export PDF from Procore
@@ -326,12 +446,23 @@ public static class ApiEndpoints
             Console.WriteLine($"Document ID: {workflowResponse!.DocIDField}");
 
             // Update status on procore
-            var patch = new CommitmentContractPatch
+            CommitmentPatchBase patch;
+            if (context.CommitmentType == ProcoreEnums.ProcoreCommitmentType.WorkOrder)
             {
-                Status = context.CommitmentType == ProcoreEnums.ProcoreCommitmentType.SubContract ?
-                    ProcoreEnums.SubcontractWorkflowStatus.AwaitingSignature :
-                    ProcoreEnums.PurchaseOrderWorkflowStatus.Submitted,
-            };
+                patch = new WorkOrderPatch
+                {
+                    Status = ProcoreEnums.SubcontractWorkflowStatus.AwaitingSignature,
+                    IssuedOnDate = DateOnly.FromDateTime(DateTime.Today)
+                };
+            }
+            else
+            {
+                patch = new PurchaseOrderPatch
+                {
+                    Status = ProcoreEnums.PurchaseOrderWorkflowStatus.Submitted,
+                    IssuedOnDate = DateOnly.FromDateTime(DateTime.Today)
+                };
+            }
 
             await procoreService.PatchCommitmentAsync(
                 context,

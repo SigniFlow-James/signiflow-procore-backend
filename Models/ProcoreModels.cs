@@ -16,6 +16,25 @@ public class ProcoreSession
 /// Procore User Model
 /// </summary>
 
+[JsonPolymorphic(TypeDiscriminatorPropertyName = "type")]
+[JsonDerivedType(typeof(WorkOrderCommitment), "WorkOrderContract")]
+[JsonDerivedType(typeof(PurchaseOrderCommitment), "PurchaseOrderContract")]
+public abstract class CommitmentBase
+{
+    [JsonPropertyName("type")]
+    public required string Type { get; set; }
+}
+
+public class WorkOrderCommitment : CommitmentBase
+{
+    
+}
+
+public class PurchaseOrderCommitment : CommitmentBase
+{
+    
+}
+
 public class ProcoreUser
 {
     [JsonPropertyName("address")]
@@ -590,75 +609,76 @@ public class CustomField
     public object? Value { get; set; }
 }
 
-
-public class CommitmentContractPatch
+public abstract class CommitmentPatchBase
 {
+    // Core
     public string? Number { get; set; }
     public string? Status { get; set; }
     public string? Title { get; set; }
     public string? Description { get; set; }
     public bool? Executed { get; set; }
+    public bool? Private { get; set; }
 
     public string? VendorId { get; set; }
-    public string? AssigneeId { get; set; }
+    public string? AccountingMethod { get; set; }
+    public decimal? RetainagePercent { get; set; }
 
-    public bool? SignatureRequired { get; set; }
-    public string? BillingScheduleOfValuesStatus { get; set; }
+    // Dates (shared)
+    public DateOnly? ApprovalLetterDate { get; set; }
+    public DateOnly? ContractDate { get; set; }
+    public DateOnly? ExecutionDate { get; set; }
+    public DateOnly? IssuedOnDate { get; set; }
+    public DateOnly? LetterOfIntentDate { get; set; }
+    public DateOnly? ReturnedDate { get; set; }
+
+    // Integration
+    public string? OriginCode { get; set; }
+    public string? OriginData { get; set; }
+    public long? OriginId { get; set; }
+
+    // Billing
+    public List<int>? InvoiceContactUserIds { get; set; }
+
+    // Currency
+    public decimal? CurrencyExchangeRate { get; set; }
+    public string? CurrencyIsoCode { get; set; }
+
+    // Attachments
+    public List<string>? Attachments { get; set; }
+    public List<int>? DrawingRevisionIds { get; set; }
+    public List<int>? FileVersionIds { get; set; }
+    public List<int>? FormIds { get; set; }
+    public List<int>? ImageIds { get; set; }
+    public List<string>? UploadIds { get; set; }
+
+    // Custom fields
+    public Dictionary<string, string?>? CustomFields { get; set; }
+}
+
+public sealed class WorkOrderPatch : CommitmentPatchBase
+{
+    public DateOnly? ActualCompletionDate { get; set; }
+    public DateOnly? ContractStartDate { get; set; }
+    public DateOnly? ContractEstimatedCompletionDate { get; set; }
+    public DateOnly? SignedContractReceivedDate { get; set; }
 
     public string? Inclusions { get; set; }
     public string? Exclusions { get; set; }
+}
+
+public sealed class PurchaseOrderPatch : CommitmentPatchBase
+{
+    public string? AssigneeId { get; set; }
+
+    public DateOnly? DeliveryDate { get; set; }
+    public DateOnly? SignedPurchaseOrderReceivedDate { get; set; }
 
     public string? BillToAddress { get; set; }
     public string? ShipToAddress { get; set; }
     public string? ShipVia { get; set; }
     public string? PaymentTerms { get; set; }
-
-    public decimal? RetainagePercent { get; set; }
-    public string? AccountingMethod { get; set; }
-
-    public bool? AllowComments { get; set; }
-    public bool? AllowMarkups { get; set; }
-
-    public string? ChangeOrderLevelOfDetail { get; set; }
-
-    public bool? EnableSsov { get; set; }
-    public bool? AllowPaymentApplications { get; set; }
-    public bool? AllowPayments { get; set; }
-
-    public bool? DisplayMaterialsRetainage { get; set; }
-    public bool? DisplayWorkRetainage { get; set; }
-    public bool? ShowCostCodeOnPdf { get; set; }
-
-    public bool? SsrEnabled { get; set; }
-    public bool? Private { get; set; }
-    public bool? ShowLineItemsToNonAdmins { get; set; }
-
-    public List<string>? BillRecipientIds { get; set; }
-    public List<string>? AccessorIds { get; set; }
-
-    public DateOnly? ActualCompletionDate { get; set; }
-    public DateOnly? ApprovalLetterDate { get; set; }
-    public DateOnly? ContractDate { get; set; }
-    public DateOnly? ContractEstimatedCompletionDate { get; set; }
-    public DateOnly? ContractStartDate { get; set; }
-    public DateOnly? DeliveryDate { get; set; }
-    public DateOnly? ExecutionDate { get; set; }
-    public DateOnly? IssuedOnDate { get; set; }
-    public DateOnly? LetterOfIntentDate { get; set; }
-    public DateOnly? ReturnedDate { get; set; }
-    public DateOnly? SignedContractReceivedDate { get; set; }
-
-    public decimal? CurrencyExchangeRate { get; set; }
-    public string? CurrencyIsoCode { get; set; }
-
-    public List<int>? ChangeEventAttachmentIds { get; set; }
-    public List<string>? AttachmentIds { get; set; }
-    public List<string>? DrawingRevisionIds { get; set; }
-    public List<string>? FileVersionIds { get; set; }
-    public List<string>? FormIds { get; set; }
-    public List<string>? ImageIds { get; set; }
-    public List<string>? UploadIds { get; set; }
 }
+
 
 // Root
 public sealed class WorkOrderContractResponse
