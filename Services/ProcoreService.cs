@@ -184,12 +184,12 @@ public class ProcoreService
 
             if (type.ToString() == ProcoreEnums.ProcoreCommitmentType.WorkOrder)
             {
-                var commitment = JsonSerializer.Deserialize<WorkOrderCommitment>(data);
+                var commitment = JsonSerializer.Deserialize<WorkOrderCommitment>(data) ?? throw new InvalidCastException("WorkOrderCommitment is null");
                 return (commitment, null);
             }
             else if (type.ToString() == ProcoreEnums.ProcoreCommitmentType.WorkOrder)
             {
-                var commitment = JsonSerializer.Deserialize<PurchaseOrderCommitment>(data);
+                var commitment = JsonSerializer.Deserialize<PurchaseOrderCommitment>(data) ?? throw new InvalidCastException("PurchaseOrderCommitment is null");
                 return (commitment, null);
             }
             else
