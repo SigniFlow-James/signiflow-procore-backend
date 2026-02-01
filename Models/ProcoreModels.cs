@@ -21,7 +21,6 @@ public class ProcoreSession
 [JsonDerivedType(typeof(PurchaseOrderCommitment), "PurchaseOrderContract")]
 public abstract class CommitmentBase
 {
-    [JsonPropertyName("type")]
     public string Type { get; set; } = default!;
 }
 
