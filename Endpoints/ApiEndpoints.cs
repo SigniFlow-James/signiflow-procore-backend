@@ -25,24 +25,18 @@ public static class ApiEndpoints
                     CommitmentType = ProcoreEnums.ProcoreCommitmentType.WorkOrder
                 };
 
-                // CommitmentBase? commitment;
-                // string? error;
-                // (commitment, error) = await procoreService.GetCommitmentAsync(context.CompanyId, context.ProjectId, context.CommitmentId);
-                // if (commitment == null)
-                // {
-                //     Console.WriteLine("❌ Commitment 1 returned null");
-                //     return;
-                // }
-                // context.CommitmentType = commitment.Type;
-                // Console.WriteLine(JsonSerializer.Serialize(commitment));
-                Console.WriteLine("Test 1 Sending");
+                var (pdfBytes, exportError) = await procoreService.ExportCommitmentPdfAsync(context);
+                if (pdfBytes == null)
+                {
+                    Console.WriteLine("No pdf bytes");
+                    return;
+                }
 
-                var files = await procoreService.GetDocumentFilesAsync(context.CompanyId, context.ProjectId);
+                var extractor = new PdfExtractionService();
 
-                Console.WriteLine("Test 1 Recieved");
-                Console.WriteLine($"Found {files.Count} file(s)");
-                files = procoreService.FindFilesFromProstoreIds(files, [9277264,9312121]);
-                Console.WriteLine($"Filtered to {files.Count} file(s)");
+                var links = extractor.GetLinksFromPdfBytes(pdfBytes);
+
+                Console.WriteLine($"{links[0].Text} - {links[0].Uri} - {links[0].Annotation} - {links[0].Letters}");
 
                 Results.Ok("OK");
             }
