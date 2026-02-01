@@ -41,7 +41,7 @@ public static class ApiEndpoints
 
                 Console.WriteLine("Test 1 Recieved");
                 Console.WriteLine($"Found {files.Count} file(s)");
-                files = procoreService.FindFilesFromProstoreIds(files, ["9277264","9312121"]);
+                files = procoreService.FindFilesFromProstoreIds(files, [9277264,9312121]);
                 Console.WriteLine($"Filtered to {files.Count} file(s)");
 
                 Results.Ok("OK");

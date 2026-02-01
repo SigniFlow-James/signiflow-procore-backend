@@ -209,7 +209,7 @@ public sealed class ExternalData
 public sealed class SimpleUser
 {
     [JsonPropertyName("id")]
-    public string Id { get; set; } = default!;
+    public int Id { get; set; } = default!;
 
     [JsonPropertyName("name")]
     public string Name { get; set; } = default!;
@@ -218,7 +218,7 @@ public sealed class SimpleUser
 public sealed class SimpleVendor
 {
     [JsonPropertyName("id")]
-    public string Id { get; set; } = default!;
+    public int Id { get; set; } = default!;
 
     [JsonPropertyName("name")]
     public string Name { get; set; } = default!;
@@ -648,7 +648,7 @@ public class FileRoot
 public class FileItem
 {
     [JsonPropertyName("id")]
-    public required string Id { get; set; }
+    public required int Id { get; set; }
 
     [JsonPropertyName("name")]
     public required string Name { get; set; }
@@ -717,7 +717,7 @@ public class User
 public class Folder
 {
     [JsonPropertyName("id")]
-    public required string Id { get; set; }
+    public required int Id { get; set; }
 
     [JsonPropertyName("name")]
     public required string Name { get; set; }
@@ -741,7 +741,7 @@ public class FileDetail
 public class FileVersion
 {
     [JsonPropertyName("id")]
-    public required string Id { get; set; }
+    public required int Id { get; set; }
 
     [JsonPropertyName("notes")]
     public required string Notes { get; set; }
@@ -771,7 +771,7 @@ public class FileVersion
 public class ProstoreFile
 {
     [JsonPropertyName("id")]
-    public required string Id { get; set; }
+    public required int Id { get; set; }
 
     [JsonPropertyName("name")]
     public required string Name { get; set; }
@@ -980,7 +980,7 @@ public sealed class WorkOrderContractData
 public sealed class CreatedBy
 {
     [JsonPropertyName("id")]
-    public string Id { get; init; } = default!;
+    public int Id { get; init; } = default!;
 
     [JsonPropertyName("name")]
     public string Name { get; init; } = default!;
@@ -989,7 +989,7 @@ public sealed class CreatedBy
 public sealed class VendorID
 {
     [JsonPropertyName("id")]
-    public string Id { get; init; } = default!;
+    public int Id { get; init; } = default!;
 }
 
 

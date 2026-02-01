@@ -446,7 +446,7 @@ public class ProcoreService
 
     public List<FileItem> FindFilesFromProstoreIds(
     List<FileItem> files,
-    List<string> ids)
+    List<int> ids)
     {
         List<FileItem> filteredFiles = [];
         foreach (var file in files)
