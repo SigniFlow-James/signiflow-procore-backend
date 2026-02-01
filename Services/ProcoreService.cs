@@ -424,7 +424,7 @@ public class ProcoreService
             HttpMethod.Get,
             "2.0",
             _oauthSession.Procore.AccessToken,
-            $"projects/{projectId}/documents?sort=document_type&filters%5Bdocument_type%5D=file",
+            $"projects/{projectId}/documents?view=extended&sort=document_type&filters%5Bdocument_type%5D=file",
             companyId
         );
 
