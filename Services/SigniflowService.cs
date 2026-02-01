@@ -240,7 +240,9 @@ public class SigniflowService
 
     public async Task<PortfolioResponse?> Test()
     {
-        var token = _oauthSession.Signiflow.TokenField;
+        try
+        {
+            var token = _oauthSession.Signiflow.TokenField;
         if (token == null)
         {
             return null;
@@ -255,7 +257,14 @@ public class SigniflowService
             endpoint: "LinkToPortfolio",
             body: request,
             false);
+
         return response;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            return null;
+        }
     }
 }
 
