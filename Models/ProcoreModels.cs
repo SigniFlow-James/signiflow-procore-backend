@@ -707,9 +707,6 @@ public class FileVersion
 
     [JsonPropertyName("prostore_file")]
     public required ProstoreFile ProstoreFile { get; set; }
-
-    [JsonPropertyName("file_id")]
-    public required string FileId { get; set; }
 }
 
 public class ProstoreFile
