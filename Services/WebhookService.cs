@@ -55,9 +55,25 @@ public class SigniflowWebhookWorker : BackgroundService
                     .GetRequiredService<SigniflowWebhookProcessor>();
                 if (evt.EventType == "Document Completed" || evt.Status == "Completed")
                 {
-                    Console.WriteLine("Document completed");
+                    Console.WriteLine("Document Completed");
                     await _authService.CheckRefreshAuthAsync();
                     await processor.ProcessDocumentCompletedAsync(evt);
+                }
+                else if (evt.EventType == "Document Rejected" || evt.Status == "Rejected")
+                {
+                    Console.WriteLine("Document Rejected");
+                    await _authService.CheckRefreshAuthAsync();
+                    await processor.ProcessDocumentRejectedAsync(evt);
+                }
+                else if (evt.EventType == "Document Cancelled" || evt.Status == "Cancelled")
+                {
+                    Console.WriteLine("Document Cancelled");
+                    await _authService.CheckRefreshAuthAsync();
+                    await processor.ProcessDocumentCancelledAsync(evt);
+                }
+                else
+                {
+                    Console.WriteLine($"Unhandled event: {evt.EventType}");
                 }
                 Console.WriteLine("Execution complete");
             }
@@ -191,7 +207,114 @@ public class SigniflowWebhookProcessor
             }
         }
     }
+
+    public async Task ProcessDocumentRejectedAsync(SigniflowWebhookEvent webhookEvent)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(webhookEvent.DocId))
+            {
+                Console.WriteLine("Webhook Completed event received, but could not get Document ID");
+                return;
+            }
+
+            Console.WriteLine($"Processing rejected document: DocID={webhookEvent.DocId}");
+
+            // Parse the metadata from AdditionalData
+            var metadata = webhookEvent.Metadata;
+            if (metadata == null)
+            {
+                Console.WriteLine($"Could not get metadata");
+                return;
+            }
+
+            // Associate upload to commitment
+            CommitmentPatchBase patch;
+            if (metadata.CommitmentType == ProcoreEnums.ProcoreCommitmentType.WorkOrder)
+            {
+                patch = new WorkOrderPatch
+                {
+                    Status = ProcoreEnums.SubcontractWorkflowStatus.Terminated,
+                    SignedContractReceivedDate = DateOnly.FromDateTime(webhookEvent.CompletedDate),
+                };
+            }
+            else
+            {
+                patch = new PurchaseOrderPatch
+                {
+                    Status = ProcoreEnums.PurchaseOrderWorkflowStatus.PartiallyRecieved,
+                    SignedPurchaseOrderReceivedDate = DateOnly.FromDateTime(webhookEvent.CompletedDate),
+                };
+            }
+
+            await _procoreService.PatchCommitmentAsync(
+                    metadata,
+                    patch
+                );
+            Console.WriteLine($"Successfully updated Procore commitment {metadata.CommitmentId}");
+        }
+
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error handling completed document: {ex}");
+            throw;
+        }
+    }
+
+    public async Task ProcessDocumentCancelledAsync(SigniflowWebhookEvent webhookEvent)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(webhookEvent.DocId))
+            {
+                Console.WriteLine("Webhook Completed event received, but could not get Document ID");
+                return;
+            }
+
+            Console.WriteLine($"Processing rejected document: DocID={webhookEvent.DocId}");
+
+            // Parse the metadata from AdditionalData
+            var metadata = webhookEvent.Metadata;
+            if (metadata == null)
+            {
+                Console.WriteLine($"Could not get metadata");
+                return;
+            }
+
+            // Associate upload to commitment
+            CommitmentPatchBase patch;
+            if (metadata.CommitmentType == ProcoreEnums.ProcoreCommitmentType.WorkOrder)
+            {
+                patch = new WorkOrderPatch
+                {
+                    Status = ProcoreEnums.SubcontractWorkflowStatus.Void,
+                    SignedContractReceivedDate = DateOnly.FromDateTime(webhookEvent.CompletedDate),
+                };
+            }
+            else
+            {
+                patch = new PurchaseOrderPatch
+                {
+                    Status = ProcoreEnums.PurchaseOrderWorkflowStatus.Closed,
+                    SignedPurchaseOrderReceivedDate = DateOnly.FromDateTime(webhookEvent.CompletedDate),
+                };
+            }
+
+            await _procoreService.PatchCommitmentAsync(
+                    metadata,
+                    patch
+                );
+            Console.WriteLine($"Successfully updated Procore commitment {metadata.CommitmentId}");
+        }
+
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error handling completed document: {ex}");
+            throw;
+        }
+    }
 }
+
 
 // ============================================================
 // END FILE: Services/WebhookService.cs
